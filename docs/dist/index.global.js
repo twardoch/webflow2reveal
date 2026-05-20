@@ -265,8 +265,14 @@ var Webflow2Reveal = (() => {
   }
   var CUSTOM_CSS_OVERRIDE = `
 /* Prevent window/body scroll breakout when reveal mode is active */
-html.reveal-mode, body.reveal-mode {
+html.reveal-mode:not(.reveal-scroll-active), body.reveal-mode:not(.reveal-scroll-active) {
   overflow: hidden !important;
+  height: 100% !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+html.reveal-mode.reveal-scroll-active, body.reveal-mode.reveal-scroll-active {
   height: 100% !important;
   width: 100% !important;
   margin: 0 !important;
@@ -806,6 +812,11 @@ body.reveal-mode > :not(.reveal):not(.webflow2reveal-close) {
       }
     }
     if (isInPlace && target === document.body) {
+      const isScrollView = new URLSearchParams(window.location.search).get("view") === "scroll";
+      if (isScrollView) {
+        document.documentElement.classList.add("reveal-scroll-active");
+        document.body.classList.add("reveal-scroll-active");
+      }
       document.documentElement.classList.add("reveal-mode");
       document.body.classList.add("reveal-mode");
       document.body.appendChild(revealDiv);
@@ -833,7 +844,7 @@ body.reveal-mode > :not(.reveal):not(.webflow2reveal-close) {
     if (!document.head.querySelector('link[href*="reveal.min.css"]')) {
       const link = document.createElement("link");
       link.rel = "stylesheet";
-      link.href = "https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.css";
+      link.href = "https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.css";
       document.head.appendChild(link);
     }
     if (options.onBeforeInit) {
@@ -841,6 +852,7 @@ body.reveal-mode > :not(.reveal):not(.webflow2reveal-close) {
     }
     const runInit = () => {
       if (typeof Reveal !== "undefined") {
+        const isScrollView = new URLSearchParams(window.location.search).get("view") === "scroll";
         Reveal.initialize({
           width: 1440,
           height: 900,
@@ -849,7 +861,8 @@ body.reveal-mode > :not(.reveal):not(.webflow2reveal-close) {
           minScale: 0.2,
           maxScale: 2,
           hash: true,
-          transition: "slide"
+          transition: "slide",
+          view: isScrollView ? "scroll" : void 0
         }).then(() => {
           if (options.onAfterInit) {
             options.onAfterInit();
@@ -863,7 +876,7 @@ body.reveal-mode > :not(.reveal):not(.webflow2reveal-close) {
       runInit();
     } else {
       const script = document.createElement("script");
-      script.src = "https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.js";
+      script.src = "https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.js";
       script.onload = runInit;
       document.body.appendChild(script);
     }

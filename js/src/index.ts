@@ -293,8 +293,14 @@ export function normalizeRevealDom(root: HTMLElement, classColors: Record<string
 
 export const CUSTOM_CSS_OVERRIDE = `
 /* Prevent window/body scroll breakout when reveal mode is active */
-html.reveal-mode, body.reveal-mode {
+html.reveal-mode:not(.reveal-scroll-active), body.reveal-mode:not(.reveal-scroll-active) {
   overflow: hidden !important;
+  height: 100% !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+html.reveal-mode.reveal-scroll-active, body.reveal-mode.reveal-scroll-active {
   height: 100% !important;
   width: 100% !important;
   margin: 0 !important;
@@ -862,6 +868,11 @@ export async function convertToReveal(options: ConvertOptions): Promise<void> {
 
   // 6. Clear target container and mount
   if (isInPlace && target === document.body) {
+    const isScrollView = new URLSearchParams(window.location.search).get('view') === 'scroll';
+    if (isScrollView) {
+      document.documentElement.classList.add('reveal-scroll-active');
+      document.body.classList.add('reveal-scroll-active');
+    }
     document.documentElement.classList.add('reveal-mode');
     document.body.classList.add('reveal-mode');
     document.body.appendChild(revealDiv);
@@ -895,7 +906,7 @@ export async function convertToReveal(options: ConvertOptions): Promise<void> {
   if (!document.head.querySelector('link[href*="reveal.min.css"]')) {
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = 'https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.css';
+    link.href = 'https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.css';
     document.head.appendChild(link);
   }
 
@@ -907,6 +918,7 @@ export async function convertToReveal(options: ConvertOptions): Promise<void> {
   const runInit = () => {
     // @ts-ignore
     if (typeof Reveal !== 'undefined') {
+      const isScrollView = new URLSearchParams(window.location.search).get('view') === 'scroll';
       // @ts-ignore
       Reveal.initialize({
         width: 1440,
@@ -916,7 +928,8 @@ export async function convertToReveal(options: ConvertOptions): Promise<void> {
         minScale: 0.2,
         maxScale: 2.0,
         hash: true,
-        transition: 'slide'
+        transition: 'slide',
+        view: isScrollView ? 'scroll' : undefined
       }).then(() => {
         if (options.onAfterInit) {
           options.onAfterInit();
@@ -933,7 +946,7 @@ export async function convertToReveal(options: ConvertOptions): Promise<void> {
     runInit();
   } else {
     const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.js';
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.js';
     script.onload = runInit;
     document.body.appendChild(script);
   }

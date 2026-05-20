@@ -110,6 +110,10 @@ def normalize_reveal_dom(soup, class_colors):
         if sec_bg and not sec.get("data-background-color"):
             sec["data-background-color"] = sec_bg
 
+        # Inject default transition if not specified
+        if not sec.get("data-transition"):
+            sec["data-transition"] = "slide"
+
         # Check if the section contains a card overlay (badge)
         badge_el = None
         for div in sec.find_all("div"):
@@ -364,15 +368,21 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
         head = soup.new_tag("head")
         soup.insert(0, head)
         
-    reveal_css = soup.new_tag("link", rel="stylesheet", href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.css")
+    reveal_css = soup.new_tag("link", rel="stylesheet", href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.css")
     soup.head.append(reveal_css)
 
     # Custom styling overrides to scale layouts, prevent scrolling, and center sections
     custom_style = soup.new_tag("style")
     custom_style.string = """
     /* Prevent window/body scroll breakout */
-    html, body {
+    html:not(.reveal-scroll-active), body:not(.reveal-scroll-active) {
       overflow: hidden !important;
+      height: 100% !important;
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    html.reveal-scroll-active, body.reveal-scroll-active {
       height: 100% !important;
       width: 100% !important;
       margin: 0 !important;
@@ -499,6 +509,7 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
       align-items: center !important;
       justify-content: center !important;
       text-align: center !important;
+      flex-shrink: 0 !important;
     }
 
     /* Slide Typography (Rule 6: fill cell as much as possible) */
@@ -743,10 +754,18 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
     soup.head.append(custom_style)
 
     # Add Reveal.js script and init logic
-    reveal_js = soup.new_tag("script", src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.js")
+    reveal_js = soup.new_tag("script", src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.js")
     reveal_init = soup.new_tag("script")
     reveal_init.string = """
     document.addEventListener("DOMContentLoaded", function() {
+      // Check if view=scroll is in the URL query string
+      const urlParams = new URLSearchParams(window.location.search);
+      const isScrollView = urlParams.get('view') === 'scroll';
+      if (isScrollView) {
+        document.documentElement.classList.add('reveal-scroll-active');
+        document.body.classList.add('reveal-scroll-active');
+      }
+
       Reveal.initialize({
         width: 1440,
         height: 900,
@@ -755,7 +774,8 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
         minScale: 0.2,
         maxScale: 2.0,
         hash: true,
-        transition: 'slide'
+        transition: 'slide',
+        view: isScrollView ? 'scroll' : undefined
       });
     });
     """
