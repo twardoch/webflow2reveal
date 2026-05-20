@@ -24,8 +24,11 @@ echo "=== Publishing to PyPI ==="
 uv publish
 
 echo "=== Publishing to NPM ==="
+VERSION=$(git describe --tags --abbrev=0 | sed 's/^v//')
+echo "=== Updating JS package.json version to $VERSION ==="
 cd js
-# We use npm publish. The user will be prompted for OTP/login if needed
+npm version "$VERSION" --no-git-tag-version
+npm run build
 npm publish --access public
 cd ..
 

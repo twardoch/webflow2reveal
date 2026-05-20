@@ -151,11 +151,19 @@ var Webflow2Reveal = (() => {
       }
       let badgeEl = null;
       const divs = Array.from(sec.getElementsByTagName("div"));
-      for (const div of divs) {
-        const divClasses = Array.from(div.classList).join(" ").toLowerCase();
-        if (divClasses.includes("card") || divClasses.includes("badge")) {
-          badgeEl = div;
-          break;
+      const cardDivs = divs.filter((div) => {
+        const cls = Array.from(div.classList).join(" ").toLowerCase();
+        return cls.includes("card") || cls.includes("badge");
+      });
+      if (cardDivs.length === 1) {
+        badgeEl = cardDivs[0];
+      } else if (cardDivs.length > 1) {
+        const kaprCards = cardDivs.filter((div) => {
+          const cls = Array.from(div.classList).join(" ").toLowerCase();
+          return cls.includes("kapr-");
+        });
+        if (kaprCards.length === 1) {
+          badgeEl = kaprCards[0];
         }
       }
       if (badgeEl) {
@@ -256,8 +264,8 @@ var Webflow2Reveal = (() => {
     }
   }
   var CUSTOM_CSS_OVERRIDE = `
-/* Prevent window/body scroll breakout */
-html, body {
+/* Prevent window/body scroll breakout when reveal mode is active */
+html.reveal-mode, body.reveal-mode {
   overflow: hidden !important;
   height: 100% !important;
   width: 100% !important;
@@ -274,6 +282,9 @@ html, body {
 /* Zero slide margins (Rule 3) */
 .reveal .slides section.slide-section {
   height: 100% !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  border-bottom: none !important;
   box-sizing: border-box !important;
   overflow: hidden !important;
   position: relative !important;
@@ -625,10 +636,45 @@ html body [class*="freshworks"] {
   visibility: hidden !important;
   opacity: 0 !important;
 }
+
+/* Close button for reveal mode */
+.webflow2reveal-close {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  width: 48px;
+  height: 48px;
+  background: rgba(15, 12, 8, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(252, 250, 247, 0.15);
+  border-radius: 50%;
+  color: #fcfaf7;
+  font-size: 28px;
+  font-weight: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 999999;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+.webflow2reveal-close:hover {
+  background: #d6ff09;
+  color: #0d0a06;
+  border-color: #d6ff09;
+  transform: scale(1.08);
+}
+/* When in reveal mode, hide all other direct children of body */
+body.reveal-mode > :not(.reveal):not(.webflow2reveal-close) {
+  display: none !important;
+}
 `;
   async function convertToReveal(options) {
     const target = options.targetElement || document.body;
     let htmlContent = options.htmlContent || "";
+    const isInPlace = !htmlContent && !options.sourceUrl;
     if (!htmlContent && options.sourceUrl) {
       console.log(`Fetching Webflow page content from: ${options.sourceUrl}`);
       const fetchUrl = options.corsProxy ? options.corsProxy + encodeURIComponent(options.sourceUrl) : options.sourceUrl;
@@ -638,12 +684,36 @@ html body [class*="freshworks"] {
       }
       htmlContent = await resp.text();
     }
-    if (!htmlContent) {
-      throw new Error("No HTML content or sourceUrl provided.");
-    }
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(htmlContent, "text/html");
     const classColors = {};
+    if (isInPlace) {
+      for (let i = 0; i < document.styleSheets.length; i++) {
+        const sheet = document.styleSheets[i];
+        try {
+          const rules = sheet.cssRules || sheet.rules;
+          if (rules) {
+            for (let j = 0; j < rules.length; j++) {
+              const rule = rules[j];
+              if (rule.selectorText && rule.style) {
+                const bgColor = rule.style.backgroundColor || rule.style.background;
+                if (bgColor && !["transparent", "rgba(0, 0, 0, 0)", "rgba(0,0,0,0)", "initial", "inherit"].includes(bgColor)) {
+                  const parts = rule.selectorText.split(",");
+                  for (let part of parts) {
+                    part = part.trim();
+                    const classRegex = /\.([a-zA-Z0-9_-]+)/g;
+                    let classMatch;
+                    while ((classMatch = classRegex.exec(part)) !== null) {
+                      classColors[classMatch[1]] = bgColor;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        } catch (e) {
+        }
+      }
+    }
+    const doc = isInPlace ? document : new DOMParser().parseFromString(htmlContent, "text/html");
     const styleTags = Array.from(doc.getElementsByTagName("style"));
     for (const style of styleTags) {
       if (style.textContent) {
@@ -659,6 +729,8 @@ html body [class*="freshworks"] {
         cssUrl = "https:" + href;
       } else if (!href.startsWith("http") && options.sourceUrl) {
         cssUrl = new URL(href, options.sourceUrl).href;
+      } else if (!href.startsWith("http")) {
+        cssUrl = new URL(href, window.location.href).href;
       }
       try {
         const fetchUrl = options.corsProxy ? options.corsProxy + encodeURIComponent(cssUrl) : cssUrl;
@@ -676,13 +748,14 @@ html body [class*="freshworks"] {
     if (!revealDiv || !slidesDiv) {
       const allSections = Array.from(doc.getElementsByTagName("section"));
       const sections = allSections.filter(isSlideSection);
-      revealDiv = doc.createElement("div");
+      revealDiv = document.createElement("div");
       revealDiv.className = "reveal";
-      slidesDiv = doc.createElement("div");
+      slidesDiv = document.createElement("div");
       slidesDiv.className = "slides";
       revealDiv.appendChild(slidesDiv);
       for (const sec of sections) {
-        slidesDiv.appendChild(sec);
+        const secNode = isInPlace ? sec.cloneNode(true) : sec;
+        slidesDiv.appendChild(secNode);
       }
     }
     normalizeRevealDom(revealDiv, classColors);
@@ -732,8 +805,25 @@ html body [class*="freshworks"] {
         }
       }
     }
-    target.innerHTML = "";
-    target.appendChild(revealDiv);
+    if (isInPlace && target === document.body) {
+      document.documentElement.classList.add("reveal-mode");
+      document.body.classList.add("reveal-mode");
+      document.body.appendChild(revealDiv);
+      if (!document.querySelector(".webflow2reveal-close")) {
+        const closeBtn = document.createElement("div");
+        closeBtn.className = "webflow2reveal-close";
+        closeBtn.innerHTML = "&times;";
+        closeBtn.addEventListener("click", () => {
+          const url = new URL(window.location.href);
+          url.searchParams.delete("reveal");
+          window.location.href = url.pathname + url.search;
+        });
+        document.body.appendChild(closeBtn);
+      }
+    } else {
+      target.innerHTML = "";
+      target.appendChild(revealDiv);
+    }
     if (!document.head.querySelector("#webflow2reveal-styles")) {
       const style = document.createElement("style");
       style.id = "webflow2reveal-styles";
@@ -776,6 +866,34 @@ html body [class*="freshworks"] {
       script.src = "https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.js";
       script.onload = runInit;
       document.body.appendChild(script);
+    }
+  }
+  if (typeof window !== "undefined") {
+    const init = () => {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("reveal") === "1" || params.get("reveal") === "true") {
+        convertToReveal({}).catch((err) => {
+          console.error("Failed to auto-convert to Reveal:", err);
+        });
+      }
+      document.addEventListener("click", (e) => {
+        const target = e.target;
+        const trigger = target.closest("[data-w2r-trigger], .w2r-trigger, #w2r-trigger");
+        if (trigger) {
+          e.preventDefault();
+          const url = new URL(window.location.href);
+          url.searchParams.set("reveal", "1");
+          window.history.pushState({}, "", url.pathname + url.search + url.hash);
+          convertToReveal({}).catch((err) => {
+            console.error("Failed to convert to Reveal:", err);
+          });
+        }
+      });
+    };
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", init);
+    } else {
+      init();
     }
   }
   return __toCommonJS(index_exports);

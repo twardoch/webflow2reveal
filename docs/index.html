@@ -3,19 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Webflow to Reveal.js Converter</title>
+  <title>Webflow to Reveal.js Converter — In-Place Slide Transformation</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-dark: #0f0c08;
+      --bg-dark: #0d0a06;
       --accent: #d6ff09;
       --accent-hover: #c4eb00;
       --card-bg: rgba(24, 20, 15, 0.7);
       --text-main: #fcfaf7;
       --text-muted: #a39f98;
       --border-color: rgba(214, 255, 9, 0.15);
+      --font-outfit: 'Outfit', sans-serif;
     }
 
     * {
@@ -24,336 +25,409 @@
       padding: 0;
     }
 
-    body.setup-mode {
-      background: radial-gradient(circle at 50% 50%, #201a12 0%, var(--bg-dark) 100%);
-      font-family: 'Outfit', sans-serif;
+    /* Scrolling Mode Styles (Default) */
+    html {
+      scroll-behavior: smooth;
+      background-color: var(--bg-dark);
+    }
+
+    body {
+      font-family: var(--font-outfit);
       color: var(--text-main);
+      background-color: var(--bg-dark);
+      background-image: radial-gradient(circle at 50% 50%, #221c13 0%, var(--bg-dark) 100%);
+      line-height: 1.6;
+      overflow-x: hidden;
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-      overflow-y: auto;
     }
 
-    /* Presentation mode overrides */
-    body.reveal-viewport {
-      background: #0d0a06;
-      overflow: hidden;
-    }
-
-    .container {
-      max-width: 680px;
-      width: 100%;
-      background: var(--card-bg);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid var(--border-color);
-      border-radius: 24px;
-      padding: 48px;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-      text-align: center;
-      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    h1 {
-      font-family: 'Playfair Display', Georgia, serif;
-      font-weight: 700;
-      font-size: 42px;
-      line-height: 1.1;
-      margin-bottom: 12px;
-      letter-spacing: -0.02em;
-    }
-
-    h1 span {
-      color: var(--accent);
-      font-style: italic;
-    }
-
-    p.subtitle {
-      font-size: 18px;
-      font-weight: 300;
-      color: var(--text-muted);
-      margin-bottom: 40px;
-      line-height: 1.5;
-    }
-
-    .form-group {
-      position: relative;
-      margin-bottom: 24px;
-    }
-
-    .input-wrapper {
-      position: relative;
-      display: flex;
-      align-items: center;
-    }
-
-    input[type="url"] {
-      width: 100%;
-      padding: 18px 24px;
-      background: rgba(15, 12, 8, 0.6);
-      border: 1px solid rgba(252, 250, 247, 0.1);
-      border-radius: 14px;
-      font-family: inherit;
-      font-size: 16px;
-      color: var(--text-main);
-      outline: none;
-      transition: all 0.2s ease;
-      padding-right: 140px;
-    }
-
-    input[type="url"]:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 15px rgba(214, 255, 9, 0.15);
-    }
-
-    button.btn-submit {
-      position: absolute;
-      right: 8px;
-      top: 8px;
-      bottom: 8px;
-      background: var(--accent);
-      color: #0f0c08;
-      border: none;
-      border-radius: 10px;
-      font-family: inherit;
-      font-weight: 600;
-      font-size: 15px;
-      padding: 0 20px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    button.btn-submit:hover {
-      background: var(--accent-hover);
-      transform: translateY(-1px);
-    }
-
-    button.btn-submit:active {
-      transform: translateY(0);
-    }
-
-    .examples {
-      margin-top: 32px;
-      text-align: left;
-      border-top: 1px solid rgba(252, 250, 247, 0.08);
-      padding-top: 24px;
-    }
-
-    .examples h3 {
-      font-size: 14px;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--text-muted);
-      margin-bottom: 12px;
-      font-weight: 600;
-    }
-
-    .example-link {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: rgba(252, 250, 247, 0.03);
-      border: 1px solid rgba(252, 250, 247, 0.05);
-      border-radius: 12px;
-      padding: 14px 20px;
-      color: var(--text-main);
-      text-decoration: none;
-      font-size: 15px;
-      transition: all 0.2s ease;
-      cursor: pointer;
-    }
-
-    .example-link:hover {
-      background: rgba(214, 255, 9, 0.05);
-      border-color: rgba(214, 255, 9, 0.3);
-    }
-
-    .example-link span.title {
-      font-weight: 600;
-    }
-
-    .example-link span.url {
-      color: var(--text-muted);
-      font-size: 13px;
-    }
-
-    /* Loading overlay */
-    .loader-overlay {
-      display: none;
+    header {
       position: fixed;
       top: 0;
       left: 0;
-      right: 0;
-      bottom: 0;
-      background: var(--bg-dark);
-      z-index: 10000;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 48px;
+      background: rgba(13, 10, 6, 0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(252, 250, 247, 0.05);
+      z-index: 1000;
+      transition: all 0.3s ease;
+    }
+
+    .logo {
+      font-weight: 700;
+      font-size: 22px;
+      letter-spacing: -0.02em;
+    }
+
+    .logo span {
+      color: var(--accent);
+    }
+
+    nav {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+
+    nav a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 15px;
+      font-weight: 500;
+      transition: color 0.2s ease;
+    }
+
+    nav a:hover {
+      color: var(--text-main);
+    }
+
+    .btn-trigger {
+      background: var(--accent);
+      color: var(--bg-dark);
+      border: none;
+      padding: 10px 20px;
+      font-family: var(--font-outfit);
+      font-weight: 600;
+      font-size: 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-trigger:hover {
+      background: var(--accent-hover);
+      transform: translateY(-2px);
+    }
+
+    main {
+      padding-top: 100px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    section {
+      width: 100%;
+      max-width: 1200px;
+      padding: 80px 24px;
+      display: flex;
       flex-direction: column;
       justify-content: center;
-      align-items: center;
-      color: var(--text-main);
-      font-family: 'Outfit', sans-serif;
+      min-height: calc(100vh - 100px);
+      border-bottom: 1px solid rgba(252, 250, 247, 0.05);
+      box-sizing: border-box;
     }
 
-    .loader-overlay.active {
-      display: flex;
+    section:last-of-type {
+      border-bottom: none;
     }
 
-    .spinner {
-      width: 50px;
-      height: 50px;
-      border: 3px solid rgba(214, 255, 9, 0.1);
-      border-radius: 50%;
-      border-top-color: var(--accent);
-      animation: spin 1s linear infinite;
+    /* Slide Content & Layout inside sections */
+    .slide-wrapper {
+      max-width: 960px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    h1, h2 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-weight: 700;
+      line-height: 1.1;
       margin-bottom: 24px;
+      letter-spacing: -0.02em;
     }
 
-    .loader-text {
-      font-size: 18px;
+    h1 {
+      font-size: 64px;
+    }
+
+    h2 {
+      font-size: 48px;
+      text-align: center;
+    }
+
+    .accent-text {
+      color: var(--accent);
+    }
+
+    p.subtitle {
+      font-size: 20px;
       font-weight: 300;
-      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 40px;
+      max-width: 720px;
     }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+      margin-top: 40px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 32px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transition: all 0.3s ease;
+    }
+
+    .card:hover {
+      border-color: var(--accent);
+      transform: translateY(-4px);
+    }
+
+    .card h3 {
+      font-size: 22px;
+      margin-bottom: 16px;
+      color: var(--text-main);
+    }
+
+    .card p {
+      color: var(--text-muted);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .step-list {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      max-width: 720px;
+      margin: 40px auto 0;
+    }
+
+    .step-item {
+      display: flex;
+      gap: 24px;
+      background: rgba(252, 250, 247, 0.02);
+      border: 1px solid rgba(252, 250, 247, 0.08);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .step-num {
+      background: var(--accent);
+      color: var(--bg-dark);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .step-content h4 {
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+
+    .step-content p {
+      color: var(--text-muted);
+      font-size: 15px;
+    }
+
+    code, pre {
+      font-family: 'Courier New', Courier, monospace;
+      background: rgba(13, 10, 6, 0.9);
+      border-radius: 6px;
+    }
+
+    pre {
+      padding: 20px;
+      overflow-x: auto;
+      border: 1px solid rgba(252, 250, 247, 0.08);
+      margin-top: 24px;
+      text-align: left;
+    }
+
+    code {
+      padding: 2px 6px;
+      color: var(--accent);
+      font-size: 14px;
+    }
+
+    pre code {
+      padding: 0;
+      color: var(--text-main);
+    }
+
+    .cta-container {
+      text-align: center;
+      margin-top: 40px;
+    }
+
+    .btn-cta {
+      background: var(--accent);
+      color: var(--bg-dark);
+      border: none;
+      padding: 16px 36px;
+      font-family: var(--font-outfit);
+      font-weight: 700;
+      font-size: 18px;
+      border-radius: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 20px rgba(214, 255, 9, 0.2);
+    }
+
+    .btn-cta:hover {
+      background: var(--accent-hover);
+      transform: scale(1.03);
+      box-shadow: 0 6px 24px rgba(214, 255, 9, 0.3);
     }
 
     footer {
-      margin-top: 40px;
-      font-size: 13px;
+      padding: 48px;
+      text-align: center;
       color: var(--text-muted);
+      font-size: 14px;
+      border-top: 1px solid rgba(252, 250, 247, 0.05);
     }
 
-    footer a {
-      color: var(--accent);
-      text-decoration: none;
+    /* Presentation Mode Custom Overrides */
+    body.reveal-mode header,
+    body.reveal-mode footer,
+    body.reveal-mode main > :not(.reveal):not(.webflow2reveal-close) {
+      display: none !important;
     }
 
-    footer a:hover {
-      text-decoration: underline;
+    /* Scope header and footer exclusion from conversion */
+    section.vx-menu-section, header, footer {
+      display: none;
     }
   </style>
 </head>
-<body class="setup-mode">
-  <div class="container" id="setup-container">
-    <h1>webflow<span>2</span>reveal</h1>
-    <p class="subtitle">Convert Webflow landing pages into premium interactive Reveal.js presentations dynamically.</p>
-    
-    <form id="url-form">
-      <div class="form-group">
-        <div class="input-wrapper">
-          <input type="url" id="webflow-url" placeholder="https://your-site.webflow.io/page" required>
-          <button type="submit" class="btn-submit">Generate</button>
+<body>
+
+  <header>
+    <div class="logo">webflow<span>2reveal</span></div>
+    <nav>
+      <a href="#features">Features</a>
+      <a href="#how-it-works">How It Works</a>
+      <button class="btn-trigger w2r-trigger">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+        View as Slides
+      </button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- Slide 1: Hero -->
+    <section id="hero">
+      <div class="slide-wrapper">
+        <h1>Webflow to <span class="accent-text">Reveal.js</span></h1>
+        <p class="subtitle">Convert structured sectioned landing pages into stunning interactive presentations dynamically, in-place, right inside the browser.</p>
+        <div class="cta-container">
+          <button class="btn-cta w2r-trigger">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            Start Demo Slides
+          </button>
         </div>
       </div>
-    </form>
+    </section>
 
-    <div class="examples">
-      <h3>Demo Example</h3>
-      <a class="example-link" id="demo-example-btn">
-        <div>
-          <span class="title">Albert Kapr Poster Case Study</span><br>
-          <span class="url">vexy-art.webflow.io/lines/case-study-kapr</span>
+    <!-- Slide 2: Features -->
+    <section id="features">
+      <div class="slide-wrapper">
+        <h2>Premium <span class="accent-text">Capabilities</span></h2>
+        <div class="grid-3">
+          <div class="card">
+            <h3>In-Place Conversion</h3>
+            <p>Direct DOM processing. Zero CORS setup needed since the scripts run directly on the page, preserving all local assets, fonts, and inline configurations.</p>
+          </div>
+          <div class="card">
+            <h3>Layout Translation</h3>
+            <p>Translates double-column grids, headers, images, and text scaling from responsive layouts into perfectly proportioned Reveal.js slide layouts.</p>
+          </div>
+          <div class="card">
+            <h3>Color Mapping</h3>
+            <p>Automatically scans local and linked stylesheets to resolve column background colors, dynamically applying light or dark slide themes.</p>
+          </div>
         </div>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-          <polyline points="12 5 19 12 12 19"></polyline>
-        </svg>
-      </a>
-    </div>
+      </div>
+    </section>
 
-    <footer>
-      Powered by <a href="https://github.com/twardoch/webflow2reveal" target="_blank">webflow2reveal</a> & Reveal.js
-    </footer>
-  </div>
+    <!-- Slide 3: How it Works -->
+    <section id="how-it-works">
+      <div class="slide-wrapper">
+        <h2>Three Simple <span class="accent-text">Steps</span></h2>
+        <div class="step-list">
+          <div class="step-item">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <h4>Include the Script</h4>
+              <p>Add a single JS script bundle from jsdelivr/unpkg or your custom CDN to the footer of your webpage.</p>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <h4>Define your Slides</h4>
+              <p>The script scans the DOM for standard <code>&lt;section&gt;</code> elements, skipping standard layout wrappers like header, nav, or footer components.</p>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <h4>Trigger the Presentation</h4>
+              <p>Add a button with class <code>w2r-trigger</code> or append <code>?reveal=1</code> to the URL. The script handles the transition instantly.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
 
-  <!-- Loading State -->
-  <div class="loader-overlay" id="loading-overlay">
-    <div class="spinner"></div>
-    <div class="loader-text" id="loader-status">Fetching Webflow Page...</div>
-  </div>
+    <!-- Slide 4: HTML integration example -->
+    <section id="installation">
+      <div class="slide-wrapper" style="text-align: center;">
+        <h2>Simple <span class="accent-text">Integration</span></h2>
+        <p class="subtitle" style="margin: 0 auto 20px;">Paste this snippet into the Webflow Page Custom Code block before the closing body tag:</p>
+        <div style="max-width: 720px; margin: 0 auto;">
+          <pre><code>&lt;!-- Load webflow2reveal library --&gt;
+&lt;script src="https://cdn.jsdelivr.net/npm/webflow2revealjs@latest/dist/index.global.js"&gt;&lt;/script&gt;
 
-  <!-- Load Webflow2Reveal dynamically compiled package -->
+&lt;!-- Add a trigger button anywhere on your Webflow canvas --&gt;
+&lt;a href="#" data-w2r-trigger class="w2r-trigger"&gt;View Slides&lt;/a&gt;</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 5: CTA -->
+    <section id="cta">
+      <div class="slide-wrapper" style="text-align: center;">
+        <h2>Ready to <span class="accent-text">Present?</span></h2>
+        <p class="subtitle" style="margin: 0 auto 30px;">Click the button below to turn this landing page into a slide presentation immediately and test the interface.</p>
+        <button class="btn-cta w2r-trigger">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+          Run Presentation
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 Vexy Art. All rights reserved. Powered by webflow2revealjs.</p>
+  </footer>
+
+  <!-- Include Local Build -->
   <script src="dist/index.global.js"></script>
-  
-  <script>
-    const form = document.getElementById('url-form');
-    const input = document.getElementById('webflow-url');
-    const setupContainer = document.getElementById('setup-container');
-    const loadingOverlay = document.getElementById('loading-overlay');
-    const loaderStatus = document.getElementById('loader-status');
-    const demoBtn = document.getElementById('demo-example-btn');
-
-    const defaultExample = 'https://vexy-art.webflow.io/lines/case-study-kapr';
-
-    // CORS proxies helper
-    // Detect if running on localhost to use local proxy, otherwise fall back to public proxy
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const corsProxy = isLocalhost ? '/proxy/' : 'https://api.allorigins.win/raw?url=';
-
-    async function loadPresentation(url) {
-      if (!url) return;
-      
-      // Update loader status
-      loadingOverlay.classList.add('active');
-      loaderStatus.textContent = 'Fetching Webflow layout...';
-      
-      try {
-        // Change body styling classes for Reveal.js
-        document.body.className = '';
-        
-        // Execute conversion
-        await Webflow2Reveal.convertToReveal({
-          sourceUrl: url,
-          corsProxy: corsProxy,
-          onBeforeInit: () => {
-            loaderStatus.textContent = 'Initializing Reveal.js...';
-          },
-          onAfterInit: () => {
-            // Hide loading overlay
-            loadingOverlay.classList.remove('active');
-          }
-        });
-      } catch (err) {
-        console.error(err);
-        alert('Error converting Webflow page: ' + err.message);
-        document.body.className = 'setup-mode';
-        loadingOverlay.classList.remove('active');
-      }
-    }
-
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const url = input.value.trim();
-      if (url) {
-        // Set query parameter so slide deck is shareable and bookmarkable
-        const newUrl = new URL(window.location.href);
-        newUrl.searchParams.set('url', url);
-        window.history.pushState({}, '', newUrl);
-        loadPresentation(url);
-      }
-    });
-
-    demoBtn.addEventListener('click', () => {
-      input.value = defaultExample;
-      const newUrl = new URL(window.location.href);
-      newUrl.searchParams.set('url', defaultExample);
-      window.history.pushState({}, '', newUrl);
-      loadPresentation(defaultExample);
-    });
-
-    // Check search params on load
-    window.addEventListener('DOMContentLoaded', () => {
-      const params = new URLSearchParams(window.location.search);
-      const url = params.get('url');
-      if (url) {
-        input.value = url;
-        loadPresentation(url);
-      }
-    });
-  </script>
 </body>
 </html>
