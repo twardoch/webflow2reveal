@@ -301,23 +301,9 @@ html.reveal-mode.reveal-scroll-active, body.reveal-mode.reveal-scroll-active {
   color: inherit !important;
   text-align: inherit !important;
 }
-.reveal.reveal-byol h1,
-.reveal.reveal-byol h2,
-.reveal.reveal-byol h3,
-.reveal.reveal-byol h4,
-.reveal.reveal-byol h5,
-.reveal.reveal-byol h6,
-.reveal.reveal-byol p,
-.reveal.reveal-byol ol,
-.reveal.reveal-byol ul,
-.reveal.reveal-byol li,
-.reveal.reveal-byol blockquote,
-.reveal.reveal-byol a,
-.reveal.reveal-byol span,
-.reveal.reveal-byol div {
-  color: revert !important;
-  text-align: revert !important;
-  text-transform: revert !important;
+.reveal.reveal-byol .slides section {
+  color: inherit !important;
+  text-align: inherit !important;
 }
 
 /* Ensure slides cover the full viewport under disableLayout: true */
