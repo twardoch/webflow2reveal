@@ -236,6 +236,14 @@ var Webflow2Reveal = (() => {
           }
         }
         continue;
+      } else if (layoutElements.length > 2) {
+        for (const col of layoutElements) {
+          const colBg = getSectionBgColor(Array.from(col.classList), classColors);
+          if (colBg) {
+            col.style.setProperty("background-color", colBg, "important");
+          }
+        }
+        continue;
       }
       const imgEl = sec.querySelector("img");
       const hasText = sec.querySelector("h1, h2, h3, p") !== null;
@@ -281,10 +289,35 @@ html.reveal-mode.reveal-scroll-active, body.reveal-mode.reveal-scroll-active {
 
 /* Presentation window baseline styles */
 .reveal {
-  background-color: #0d0a06;
-  color: #fff;
+  background-color: revert;
+  color: inherit;
+  text-align: left;
   width: 100% !important;
   height: 100% !important;
+}
+
+/* Revert Reveal's intrusive text styles under BYOL mode */
+.reveal.reveal-byol {
+  color: inherit !important;
+  text-align: inherit !important;
+}
+.reveal.reveal-byol h1,
+.reveal.reveal-byol h2,
+.reveal.reveal-byol h3,
+.reveal.reveal-byol h4,
+.reveal.reveal-byol h5,
+.reveal.reveal-byol h6,
+.reveal.reveal-byol p,
+.reveal.reveal-byol ol,
+.reveal.reveal-byol ul,
+.reveal.reveal-byol li,
+.reveal.reveal-byol blockquote,
+.reveal.reveal-byol a,
+.reveal.reveal-byol span,
+.reveal.reveal-byol div {
+  color: revert !important;
+  text-align: revert !important;
+  text-transform: revert !important;
 }
 
 /* Ensure slides cover the full viewport under disableLayout: true */
@@ -362,9 +395,9 @@ html.reveal-mode.reveal-scroll-active, body.reveal-mode.reveal-scroll-active {
   object-fit: cover !important;
 }
 
-/* 3/5 vertical centering from bottom (= 40% from top) */
-.reveal section.slide-section:has(> .slide-text-container),
-.reveal .slide-column:has(> .slide-text-container) {
+/* 3/5 vertical centering from bottom (= 40% from top) - disabled in BYOL mode */
+.reveal:not(.reveal-byol) section.slide-section:has(> .slide-text-container),
+.reveal:not(.reveal-byol) .slide-column:has(> .slide-text-container) {
   display: flex !important;
   flex-direction: column !important;
   box-sizing: border-box !important;
@@ -372,21 +405,21 @@ html.reveal-mode.reveal-scroll-active, body.reveal-mode.reveal-scroll-active {
   padding-bottom: 40px !important;
 }
 
-.reveal section.slide-section:has(> .slide-text-container)::before,
-.reveal .slide-column:has(> .slide-text-container)::before {
+.reveal:not(.reveal-byol) section.slide-section:has(> .slide-text-container)::before,
+.reveal:not(.reveal-byol) .slide-column:has(> .slide-text-container)::before {
   content: "" !important;
   display: block !important;
   flex: 4 1 0% !important;
 }
 
-.reveal section.slide-section:has(> .slide-text-container)::after,
-.reveal .slide-column:has(> .slide-text-container)::after {
+.reveal:not(.reveal-byol) section.slide-section:has(> .slide-text-container)::after,
+.reveal:not(.reveal-byol) .slide-column:has(> .slide-text-container)::after {
   content: "" !important;
   display: block !important;
   flex: 6 1 0% !important;
 }
 
-.reveal .slide-text-container {
+.reveal:not(.reveal-byol) .slide-text-container {
   position: relative !important;
   top: auto !important;
   left: auto !important;
@@ -402,6 +435,13 @@ html.reveal-mode.reveal-scroll-active, body.reveal-mode.reveal-scroll-active {
   justify-content: center !important;
   text-align: center !important;
   flex-shrink: 0 !important;
+}
+
+/* Basic text container for BYOL mode to avoid forcing flex centering */
+.reveal.reveal-byol .slide-text-container {
+  position: relative !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 /* Generic Badge overlays */
@@ -498,6 +538,24 @@ body.reveal-mode > :not(.reveal):not(.webflow2reveal-close) {
       }
     }
     const doc = isInPlace ? document : new DOMParser().parseFromString(htmlContent, "text/html");
+    let selectors = [];
+    if (options.excludeSelectors) {
+      if (Array.isArray(options.excludeSelectors)) {
+        selectors = options.excludeSelectors;
+      } else if (typeof options.excludeSelectors === "string") {
+        selectors = options.excludeSelectors.split(",").map((s) => s.trim()).filter(Boolean);
+      }
+    }
+    if (selectors.length > 0) {
+      for (const selector of selectors) {
+        try {
+          const elList = doc.querySelectorAll(selector);
+          elList.forEach((el) => el.remove());
+        } catch (err) {
+          console.warn(`Warning: Invalid selector for exclusion: ${selector}`, err);
+        }
+      }
+    }
     const styleTags = Array.from(doc.getElementsByTagName("style"));
     for (const style of styleTags) {
       if (style.textContent) {
@@ -650,6 +708,14 @@ body.reveal-mode > :not(.reveal):not(.webflow2reveal-close) {
           ...options.revealOptions || {}
         };
         Reveal.initialize(mergedRevealOptions).then(() => {
+          if (mergedRevealOptions.disableLayout) {
+            const revealEl = document.querySelector(".reveal");
+            if (revealEl) {
+              revealEl.classList.add("reveal-byol");
+            }
+          }
+          document.documentElement.classList.add("reveal-mode");
+          document.body.classList.add("reveal-mode");
           if (options.onAfterInit) {
             options.onAfterInit();
           }
