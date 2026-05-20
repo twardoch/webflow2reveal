@@ -827,6 +827,7 @@ body.reveal-mode > :not(.reveal):not(.webflow2reveal-close) {
         closeBtn.addEventListener("click", () => {
           const url = new URL(window.location.href);
           url.searchParams.delete("reveal");
+          url.searchParams.delete("view");
           window.location.href = url.pathname + url.search;
         });
         document.body.appendChild(closeBtn);
@@ -853,8 +854,7 @@ body.reveal-mode > :not(.reveal):not(.webflow2reveal-close) {
     const runInit = () => {
       if (typeof Reveal !== "undefined") {
         const isScrollView = new URLSearchParams(window.location.search).get("view") === "scroll";
-        console.log("[webflow2reveal] isScrollView:", isScrollView, "search:", window.location.search, "Reveal.VERSION:", typeof window.Reveal !== "undefined" ? window.Reveal.VERSION : "undefined");
-        Reveal.initialize({
+        const defaultRevealOptions = {
           width: 1440,
           height: 900,
           margin: 0,
@@ -863,8 +863,14 @@ body.reveal-mode > :not(.reveal):not(.webflow2reveal-close) {
           maxScale: 2,
           hash: true,
           transition: "slide",
+          backgroundTransition: "slide",
           view: isScrollView ? "scroll" : void 0
-        }).then(() => {
+        };
+        const mergedRevealOptions = {
+          ...defaultRevealOptions,
+          ...options.revealOptions || {}
+        };
+        Reveal.initialize(mergedRevealOptions).then(() => {
           if (options.onAfterInit) {
             options.onAfterInit();
           }
@@ -886,7 +892,8 @@ body.reveal-mode > :not(.reveal):not(.webflow2reveal-close) {
     const init = () => {
       const params = new URLSearchParams(window.location.search);
       if (params.get("reveal") === "1" || params.get("reveal") === "true") {
-        convertToReveal({}).catch((err) => {
+        const globalOpts = window.webflow2revealOptions || {};
+        convertToReveal(globalOpts).catch((err) => {
           console.error("Failed to auto-convert to Reveal:", err);
         });
       }
@@ -898,7 +905,8 @@ body.reveal-mode > :not(.reveal):not(.webflow2reveal-close) {
           const url = new URL(window.location.href);
           url.searchParams.set("reveal", "1");
           window.history.pushState({}, "", url.pathname + url.search + url.hash);
-          convertToReveal({}).catch((err) => {
+          const globalOpts = window.webflow2revealOptions || {};
+          convertToReveal(globalOpts).catch((err) => {
             console.error("Failed to convert to Reveal:", err);
           });
         }

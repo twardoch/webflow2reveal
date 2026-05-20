@@ -13,6 +13,8 @@ export interface ConvertOptions {
   onBeforeInit?: () => void;
   /** Callback triggered after Reveal is initialized. */
   onAfterInit?: () => void;
+  /** Options passed directly to Reveal.initialize */
+  revealOptions?: Record<string, any>;
 }
 
 export function parseCssBackgroundColors(cssContent: string): Record<string, string> {
@@ -885,6 +887,7 @@ export async function convertToReveal(options: ConvertOptions): Promise<void> {
       closeBtn.addEventListener('click', () => {
         const url = new URL(window.location.href);
         url.searchParams.delete('reveal');
+        url.searchParams.delete('view');
         window.location.href = url.pathname + url.search;
       });
       document.body.appendChild(closeBtn);
@@ -919,9 +922,7 @@ export async function convertToReveal(options: ConvertOptions): Promise<void> {
     // @ts-ignore
     if (typeof Reveal !== 'undefined') {
       const isScrollView = new URLSearchParams(window.location.search).get('view') === 'scroll';
-      console.log("[webflow2reveal] isScrollView:", isScrollView, "search:", window.location.search, "Reveal.VERSION:", typeof (window as any).Reveal !== 'undefined' ? (window as any).Reveal.VERSION : 'undefined');
-      // @ts-ignore
-      Reveal.initialize({
+      const defaultRevealOptions = {
         width: 1440,
         height: 900,
         margin: 0,
@@ -930,8 +931,17 @@ export async function convertToReveal(options: ConvertOptions): Promise<void> {
         maxScale: 2.0,
         hash: true,
         transition: 'slide',
+        backgroundTransition: 'slide',
         view: isScrollView ? 'scroll' : undefined
-      }).then(() => {
+      };
+      
+      const mergedRevealOptions = {
+        ...defaultRevealOptions,
+        ...(options.revealOptions || {})
+      };
+
+      // @ts-ignore
+      Reveal.initialize(mergedRevealOptions).then(() => {
         if (options.onAfterInit) {
           options.onAfterInit();
         }
@@ -958,7 +968,8 @@ if (typeof window !== 'undefined') {
   const init = () => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('reveal') === '1' || params.get('reveal') === 'true') {
-      convertToReveal({}).catch(err => {
+      const globalOpts = (window as any).webflow2revealOptions || {};
+      convertToReveal(globalOpts).catch(err => {
         console.error('Failed to auto-convert to Reveal:', err);
       });
     }
@@ -972,7 +983,8 @@ if (typeof window !== 'undefined') {
         const url = new URL(window.location.href);
         url.searchParams.set('reveal', '1');
         window.history.pushState({}, '', url.pathname + url.search + url.hash);
-        convertToReveal({}).catch(err => {
+        const globalOpts = (window as any).webflow2revealOptions || {};
+        convertToReveal(globalOpts).catch(err => {
           console.error('Failed to convert to Reveal:', err);
         });
       }
