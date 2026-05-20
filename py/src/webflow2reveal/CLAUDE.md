@@ -8,5 +8,4 @@
 | ID | Time | T | Title | Read |
 |----|------|---|-------|------|
 | #7769 | 12:00 AM | 🔵 | webflow2reveal project tooling and publishing infrastructure mapped | ~716 |
-| #7768 | " | 🔵 | webflow2reveal dual-implementation architecture analyzed | ~615 |
 </claude-mem-context>

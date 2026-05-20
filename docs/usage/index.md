@@ -19,3 +19,9 @@ Pick where the conversion should run:
 Both implementations apply the same DOM normalization and CSS injection
 described in [How it works]({{ '/how-it-works/' | relative_url }}); they differ
 only in when and where they execute.
+
+New to it, or working straight from the Webflow Designer? Start with
+[In Webflow]({{ '/usage/webflow/' | relative_url }}) — a task-oriented guide that
+covers preparing the page, embedding the JS via Webflow's custom-code slots,
+configuring both implementations from one block, and compiling a static deck
+with Python.

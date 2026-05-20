@@ -51,6 +51,11 @@ stays correct.
 Both share the same normalization algorithm. The difference is *when* it runs:
 once at build time (Python) versus on demand in the visitor's browser (JS).
 
+Working straight from the Webflow Designer? The
+[In Webflow]({{ '/usage/webflow/' | relative_url }}) guide walks through
+embedding the library in Webflow's custom-code slots, wiring a "View as slides"
+button, configuring both tools from one code block, and compiling a static deck.
+
 ## Two ways to present the same deck
 
 Every generated deck understands a `?view=scroll` query parameter that switches

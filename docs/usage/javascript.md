@@ -77,19 +77,29 @@ await convertToReveal({
 | `htmlContent`   | `string`                      | Raw HTML to convert. Skips fetching `sourceUrl`.                                        |
 | `corsProxy`     | `string`                      | Prefix used to fetch cross-origin pages/stylesheets, e.g. `https://api.allorigins.win/raw?url=`. |
 | `targetElement` | `HTMLElement`                 | Mount point. Defaults to `document.body` (in-place mode).                              |
+| `excludeSelectors` | `string[] \| string`       | Selector(s) whose matching elements are removed before converting. A string may be comma-separated. |
 | `revealOptions` | `Record<string, any>`         | Merged over the defaults and passed to `Reveal.initialize`.                            |
 | `onBeforeInit`  | `() => void`                  | Called just before `Reveal.initialize`.                                                |
 | `onAfterInit`   | `() => void`                  | Called after Reveal finishes initializing.                                            |
 
-To preconfigure the auto-init (`?reveal=1`) path, set
-`window.webflow2revealOptions` before the script runs — those options are passed
-to `convertToReveal`.
+To preconfigure the auto-init (`?reveal=1`) path and the `.w2r-trigger` click
+path, set `window.webflow2revealOptions` before the script runs — that object is
+passed verbatim to `convertToReveal`. This is the recommended way to configure
+the library on a Webflow page; see
+[In Webflow]({{ '/usage/webflow/' | relative_url }}) for the full workflow,
+including how the Python build-time tool reads the same block.
 
 ### Default Reveal options
 
 `width: 1440`, `height: 900`, `margin: 0`, `center: false`, `minScale: 0.2`,
 `maxScale: 2.0`, `hash: true`, `transition: 'slide'`,
-`backgroundTransition: 'slide'`. Anything in `revealOptions` overrides these.
+`backgroundTransition: 'slide'`, and `disableLayout: true`. Anything in
+`revealOptions` overrides these.
+
+`disableLayout: true` is the **bring-your-own-layout (BYOL)** mode: Reveal skips
+its own scaling/centering math and the deck keeps Webflow's typography and
+spacing, with webflow2reveal's stylesheet sizing each slide to the stage. To let
+Reveal take over layout instead, pass `revealOptions: { disableLayout: false }`.
 
 ## In-place vs. fetched conversion
 

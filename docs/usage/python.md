@@ -31,7 +31,7 @@ The CLI is a [Fire](https://github.com/google/python-fire) wrapper over the
 `convert` function, so every parameter is a flag:
 
 ```bash
-webflow2reveal <source> [--output index.html] [--serve] [--port 8000]
+webflow2reveal <source> [--output index.html] [--serve] [--port 8000] [--exclude "<selectors>"]
 ```
 
 | Argument / flag | Default       | Notes                                                                |
@@ -40,10 +40,29 @@ webflow2reveal <source> [--output index.html] [--serve] [--port 8000]
 | `--output`      | `index.html`  | Output file for the generated deck. Parent dirs are created.         |
 | `--serve`       | `False`       | After writing, start a local `http.server` in the output directory.  |
 | `--port`        | `8000`        | Port for the dev server (only with `--serve`).                       |
+| `--exclude`     | `None`        | Comma-separated CSS selectors whose matching elements are removed before conversion. |
 
 When `source` is a URL, linked stylesheets are fetched (with a 5 s timeout) so
 their background colours can be resolved; when it is a local file, stylesheet
 paths are resolved relative to that file's directory.
+
+### Excluding elements
+
+`--exclude` drops elements that survive the automatic chrome filtering — a
+cookie bar, a floating CTA, a live-chat widget — by CSS selector:
+
+```bash
+webflow2reveal https://example.webflow.io/deck --exclude ".cookie-banner, #intercom-frame"
+```
+
+The converter also reads exclusions defined **on the page itself**: if the
+Webflow page sets `window.webflow2revealOptions = { excludeSelectors: [...] }`
+in an inline (or `*reveal_config*`) script, those selectors are scraped at build
+time and merged with `--exclude` (duplicates removed). The same block can set a
+top-level `disableLayout: false` to opt the generated deck out of the default
+"bring your own layout" mode. See
+[In Webflow]({{ '/usage/webflow/' | relative_url }}#4-configure-both-implementations-from-one-block)
+for the shared-configuration workflow.
 
 ### Examples
 
@@ -69,11 +88,17 @@ convert("https://example.webflow.io/deck", output="index.html")
 
 # Convert a local file and serve it
 convert("export/index.html", output="dist/index.html", serve=True, port=8080)
+
+# Drop extra elements by selector
+convert("https://example.webflow.io/deck", exclude=".cookie-banner, #live-chat")
 ```
 
-`convert(source, output="index.html", serve=False, port=8000)` performs the
-fetch/read, conversion, and (optionally) the blocking dev-server loop. It prints
-progress to stdout and exits non-zero if the source URL or file cannot be read.
+`convert(source, output="index.html", serve=False, port=8000, exclude=None)`
+performs the fetch/read, conversion, and (optionally) the blocking dev-server
+loop. It prints progress to stdout and exits non-zero if the source URL or file
+cannot be read. `exclude` takes a comma-separated string of CSS selectors and is
+merged with any `excludeSelectors` declared in the page's
+`window.webflow2revealOptions`.
 
 ## Viewing the result
 
