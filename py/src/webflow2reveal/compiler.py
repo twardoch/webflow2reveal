@@ -213,6 +213,131 @@ def normalize_reveal_dom(soup, class_colors):
             else:
                 wrap_contents_in_div(soup, sec, "slide-text-container")
 
+def find_balanced_braces(text: str, start_idx: int) -> str:
+    """
+    Finds a balanced substring starting with '{' and ending with '}'.
+    Handles strings with escaped characters and nested braces.
+    """
+    idx = text.find('{', start_idx)
+    if idx == -1:
+        return None
+    
+    brace_count = 0
+    in_string = False
+    string_char = None
+    escaped = False
+    
+    for i in range(idx, len(text)):
+        char = text[i]
+        
+        if escaped:
+            escaped = False
+            continue
+            
+        if char == '\\':
+            escaped = True
+            continue
+            
+        if char in ('"', "'", "`"):
+            if not in_string:
+                in_string = True
+                string_char = char
+            elif string_char == char:
+                in_string = False
+                string_char = None
+            continue
+            
+        if not in_string:
+            if char == '{':
+                brace_count += 1
+            elif char == '}':
+                brace_count -= 1
+                if brace_count == 0:
+                    return text[idx:i+1]
+                    
+    return None
+
+def parse_options_from_js(js_content: str) -> dict:
+    """
+    Parses options from a JS content string where window.webflow2revealOptions is defined.
+    """
+    options = {}
+    pattern = re.compile(r'webflow2revealOptions\s*=\s*')
+    for match in pattern.finditer(js_content):
+        start_idx = match.end()
+        obj_text = find_balanced_braces(js_content, start_idx)
+        if not obj_text:
+            continue
+            
+        # Parse excludeSelectors
+        exclude_selectors_match = re.search(r'excludeSelectors\s*:\s*(\[[^\]]*\]|"[^"\\]*(?:\\.[^"\\]*)*"|\'[^\'\\]*(?:\\.[^\'\\]*)*\')', obj_text)
+        if exclude_selectors_match:
+            val_str = exclude_selectors_match.group(1).strip()
+            if val_str.startswith('['):
+                strings = re.findall(r'"([^"\\]*(?:\\.[^"\\]*)*)"|\'([^\'\\]*(?:\\.[^\'\\]*)*)\'', val_str)
+                selectors = []
+                for d_match, s_match in strings:
+                    if d_match:
+                        selectors.append(d_match)
+                    elif s_match:
+                        selectors.append(s_match)
+                options['excludeSelectors'] = selectors
+            else:
+                val_match = re.match(r'^["\'](.*)["\']$', val_str)
+                if val_match:
+                    options['excludeSelectors'] = [val_match.group(1)]
+                    
+        # Parse disableLayout
+        disable_layout_match = re.search(r'disableLayout\s*:\s*(true|false)', obj_text, re.IGNORECASE)
+        if disable_layout_match:
+            options['disableLayout'] = disable_layout_match.group(1).lower() == 'true'
+            
+    return options
+
+def extract_webflow2reveal_options(html_content: str, source_url: str = None) -> dict:
+    """
+    Scans the HTML page for inline and linked config scripts and extracts options.
+    """
+    options = {}
+    soup = BeautifulSoup(html_content, "html.parser")
+    
+    inline_scripts = []
+    external_script_urls = []
+    
+    for script in soup.find_all("script"):
+        src = script.get("src")
+        if src:
+            # Check if this looks like a configuration script
+            # Do NOT pull down the main library package
+            if ("reveal_config" in src or "vexy_lines_kapr_reveal_config" in src) and "webflow2revealjs" not in src:
+                # Resolve relative URL
+                if not src.startswith("http") and source_url and source_url.startswith("http"):
+                    src = urljoin(source_url, src)
+                elif src.startswith("//"):
+                    src = "https:" + src
+                external_script_urls.append(src)
+        else:
+            if script.string:
+                inline_scripts.append(script.string)
+                
+    for script_content in inline_scripts:
+        opts = parse_options_from_js(script_content)
+        if opts:
+            options.update(opts)
+            
+    for url in external_script_urls:
+        try:
+            print(f"Fetching config script: {url}")
+            resp = requests.get(url, timeout=5)
+            if resp.status_code == 200:
+                opts = parse_options_from_js(resp.text)
+                if opts:
+                    options.update(opts)
+        except Exception as e:
+            print(f"Warning: Could not fetch config script from {url}: {e}")
+            
+    return options
+
 def convert(source: str, output: str = "index.html", serve: bool = False, port: int = 8000, exclude: str = None):
     """
     Converts a Webflow page to a Reveal.js presentation.
@@ -242,10 +367,25 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
 
     soup = BeautifulSoup(html_content, "html.parser")
 
-    # Remove excluded elements from the HTML soup
+    # Extract options configured on the page
+    page_options = extract_webflow2reveal_options(html_content, source_url=source if source.startswith("http") else None)
+    if page_options:
+        print(f"Extracted page configuration options: {page_options}")
+
+    # Combine page excludeSelectors with CLI exclude
+    all_excludes = []
     if exclude:
-        selectors = [s.strip() for s in exclude.split(",") if s.strip()]
-        for selector in selectors:
+        all_excludes.extend([s.strip() for s in exclude.split(",") if s.strip()])
+    
+    if page_options and 'excludeSelectors' in page_options:
+        all_excludes.extend(page_options['excludeSelectors'])
+        
+    # Remove excluded elements from the HTML soup
+    if all_excludes:
+        # Deduplicate
+        all_excludes = list(dict.fromkeys(all_excludes))
+        print(f"Applying exclusions: {all_excludes}")
+        for selector in all_excludes:
             try:
                 for el in soup.select(selector):
                     el.decompose()
@@ -586,17 +726,23 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
     # Add Reveal.js script and init logic
     reveal_js = soup.new_tag("script", src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.js")
     reveal_init = soup.new_tag("script")
-    reveal_init.string = """
-    document.addEventListener("DOMContentLoaded", function() {
+    
+    # Determine disableLayout value (defaulting to True if not specified or true, else respect page config)
+    disable_layout_val = "true"
+    if page_options and 'disableLayout' in page_options:
+        disable_layout_val = "true" if page_options['disableLayout'] else "false"
+        
+    reveal_init.string = f"""
+    document.addEventListener("DOMContentLoaded", function() {{
       // Check if view=scroll is in the URL query string
       const urlParams = new URLSearchParams(window.location.search);
       const isScrollView = urlParams.get('view') === 'scroll';
-      if (isScrollView) {
+      if (isScrollView) {{
         document.documentElement.classList.add('reveal-scroll-active');
         document.body.classList.add('reveal-scroll-active');
-      }
+      }}
 
-      Reveal.initialize({
+      Reveal.initialize({{
         width: 1440,
         height: 900,
         margin: 0,
@@ -606,16 +752,16 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
         hash: true,
         transition: 'slide',
         view: isScrollView ? 'scroll' : undefined,
-        disableLayout: true
-      }).then(() => {
+        disableLayout: {disable_layout_val}
+      }}).then(() => {{
         const revealEl = document.querySelector('.reveal');
-        if (revealEl) {
+        if (revealEl) {{
           revealEl.classList.add('reveal-byol');
-        }
+        }}
         document.documentElement.classList.add('reveal-mode');
         document.body.classList.add('reveal-mode');
-      });
-    });
+      }});
+    }});
     """
     
     if not soup.body:
