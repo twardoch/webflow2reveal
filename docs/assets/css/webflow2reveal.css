@@ -1,0 +1,24 @@
+/* this_file: docs/assets/css/webflow2reveal.css */
+
+.w2r-hero {
+  margin: 1rem 0 2rem;
+  padding: 1.5rem 1.75rem;
+  background: linear-gradient(135deg, #161310 0%, #221c13 100%);
+  border-radius: 8px;
+  border: 1px solid #2c2620;
+}
+
+.w2r-hero__lede {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.w2r-hero__lede code {
+  background: rgba(214, 255, 9, 0.12);
+  color: #d6ff09;
+}
+
+.w2r-hero__lede a {
+  color: #d6ff09;
+}

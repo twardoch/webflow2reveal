@@ -1,0 +1,51 @@
+title: webflow2reveal
+tagline: Webflow page → Reveal.js presentation
+description: Turn a structured, sectioned Webflow landing page into an interactive Reveal.js slide deck. One DOM-normalization approach, two implementations — a Python CLI and a browser-side JavaScript library.
+url: https://code.twardoch.com
+baseurl: /webflow2reveal
+
+remote_theme: just-the-docs/just-the-docs@v0.12.0
+repository: twardoch/webflow2reveal
+
+color_scheme: dark
+search_enabled: true
+heading_anchors: true
+
+aux_links:
+  GitHub: https://github.com/twardoch/webflow2reveal
+  Demo: /webflow2reveal/demo/
+aux_links_new_tab: true
+
+gh_edit_link: true
+gh_edit_link_text: Edit this page on GitHub
+gh_edit_repository: https://github.com/twardoch/webflow2reveal
+gh_edit_branch: main
+gh_edit_source: docs
+gh_edit_view_mode: tree
+
+footer_content: "Copyright &copy; Adam Twardoch. Distributed under the MIT license."
+
+plugins:
+  - jekyll-seo-tag
+  - jekyll-sitemap
+  - jekyll-remote-theme
+
+lang: en
+timezone: Europe/Warsaw
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: page
+  - scope:
+      path: "usage"
+    values:
+      layout: page
+
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - README.md
+  - vendor
+  - node_modules

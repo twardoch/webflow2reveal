@@ -11,9 +11,9 @@ npm install
 npm run build
 cd ..
 
-echo "=== Copying browser bundle to docs ==="
-mkdir -p docs/dist
-cp js/dist/index.global.js docs/dist/index.global.js
+echo "=== Copying browser bundle to docs demo ==="
+mkdir -p docs/demo/dist
+cp js/dist/index.global.js docs/demo/dist/index.global.js
 
 echo "=== Building webflow2reveal Python package ==="
 # Clean old builds
