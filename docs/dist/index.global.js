@@ -853,6 +853,7 @@ body.reveal-mode > :not(.reveal):not(.webflow2reveal-close) {
     const runInit = () => {
       if (typeof Reveal !== "undefined") {
         const isScrollView = new URLSearchParams(window.location.search).get("view") === "scroll";
+        console.log("[webflow2reveal] isScrollView:", isScrollView, "search:", window.location.search, "Reveal.VERSION:", typeof window.Reveal !== "undefined" ? window.Reveal.VERSION : "undefined");
         Reveal.initialize({
           width: 1440,
           height: 900,

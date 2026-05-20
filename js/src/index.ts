@@ -919,6 +919,7 @@ export async function convertToReveal(options: ConvertOptions): Promise<void> {
     // @ts-ignore
     if (typeof Reveal !== 'undefined') {
       const isScrollView = new URLSearchParams(window.location.search).get('view') === 'scroll';
+      console.log("[webflow2reveal] isScrollView:", isScrollView, "search:", window.location.search, "Reveal.VERSION:", typeof (window as any).Reveal !== 'undefined' ? (window as any).Reveal.VERSION : 'undefined');
       // @ts-ignore
       Reveal.initialize({
         width: 1440,
