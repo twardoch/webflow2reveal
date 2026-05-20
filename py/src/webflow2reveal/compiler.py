@@ -186,6 +186,12 @@ def normalize_reveal_dom(soup, class_colors):
                     else:
                         wrap_contents_in_div(soup, col, "slide-text-container")
             continue
+        elif len(layout_elements) > 2:
+            for col in layout_elements:
+                col_bg = get_section_bg_color(col.get("class", []), class_colors)
+                if col_bg:
+                    col['style'] = col.get('style', '') + f"; background-color: {col_bg} !important;"
+            continue
 
         # Single cell / text layouts
         img_el = sec.find("img")
@@ -207,7 +213,7 @@ def normalize_reveal_dom(soup, class_colors):
             else:
                 wrap_contents_in_div(soup, sec, "slide-text-container")
 
-def convert(source: str, output: str = "index.html", serve: bool = False, port: int = 8000):
+def convert(source: str, output: str = "index.html", serve: bool = False, port: int = 8000, exclude: str = None):
     """
     Converts a Webflow page to a Reveal.js presentation.
     
@@ -216,6 +222,7 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
         output: The output file path for the generated slide deck.
         serve: Whether to start a local development server after conversion.
         port: The port for the development server (default 8000).
+        exclude: Comma-separated list of CSS selectors to remove from the output presentation.
     """
     print(f"Reading source from: {source}")
     if source.startswith("http://") or source.startswith("https://"):
@@ -234,6 +241,17 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
             html_content = f.read()
 
     soup = BeautifulSoup(html_content, "html.parser")
+
+    # Remove excluded elements from the HTML soup
+    if exclude:
+        selectors = [s.strip() for s in exclude.split(",") if s.strip()]
+        for selector in selectors:
+            try:
+                for el in soup.select(selector):
+                    el.decompose()
+            except Exception as e:
+                print(f"Warning: Invalid selector for exclusion: {selector} ({e})", file=sys.stderr)
+
     class_colors = {}
     
     # 1. Parse inline style tags
@@ -391,10 +409,35 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
 
     /* Presentation window baseline styles */
     .reveal {
-      background-color: #0d0a06;
-      color: #fff;
+      background-color: revert;
+      color: inherit;
+      text-align: left;
       width: 100% !important;
       height: 100% !important;
+    }
+
+    /* Revert Reveal's intrusive text styles under BYOL mode */
+    .reveal.reveal-byol {
+      color: inherit !important;
+      text-align: inherit !important;
+    }
+    .reveal.reveal-byol h1,
+    .reveal.reveal-byol h2,
+    .reveal.reveal-byol h3,
+    .reveal.reveal-byol h4,
+    .reveal.reveal-byol h5,
+    .reveal.reveal-byol h6,
+    .reveal.reveal-byol p,
+    .reveal.reveal-byol ol,
+    .reveal.reveal-byol ul,
+    .reveal.reveal-byol li,
+    .reveal.reveal-byol blockquote,
+    .reveal.reveal-byol a,
+    .reveal.reveal-byol span,
+    .reveal.reveal-byol div {
+      color: revert !important;
+      text-align: revert !important;
+      text-transform: revert !important;
     }
 
     /* Ensure slides cover the full viewport under disableLayout: true */
@@ -472,9 +515,9 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
       object-fit: cover !important;
     }
 
-    /* 3/5 vertical centering from bottom (= 40% from top) */
-    .reveal section.slide-section:has(> .slide-text-container),
-    .reveal .slide-column:has(> .slide-text-container) {
+    /* 3/5 vertical centering from bottom (= 40% from top) - disabled in BYOL mode */
+    .reveal:not(.reveal-byol) section.slide-section:has(> .slide-text-container),
+    .reveal:not(.reveal-byol) .slide-column:has(> .slide-text-container) {
       display: flex !important;
       flex-direction: column !important;
       box-sizing: border-box !important;
@@ -482,21 +525,21 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
       padding-bottom: 40px !important;
     }
 
-    .reveal section.slide-section:has(> .slide-text-container)::before,
-    .reveal .slide-column:has(> .slide-text-container)::before {
+    .reveal:not(.reveal-byol) section.slide-section:has(> .slide-text-container)::before,
+    .reveal:not(.reveal-byol) .slide-column:has(> .slide-text-container)::before {
       content: "" !important;
       display: block !important;
       flex: 4 1 0% !important;
     }
 
-    .reveal section.slide-section:has(> .slide-text-container)::after,
-    .reveal .slide-column:has(> .slide-text-container)::after {
+    .reveal:not(.reveal-byol) section.slide-section:has(> .slide-text-container)::after,
+    .reveal:not(.reveal-byol) .slide-column:has(> .slide-text-container)::after {
       content: "" !important;
       display: block !important;
       flex: 6 1 0% !important;
     }
 
-    .reveal .slide-text-container {
+    .reveal:not(.reveal-byol) .slide-text-container {
       position: relative !important;
       top: auto !important;
       left: auto !important;
@@ -512,6 +555,13 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
       justify-content: center !important;
       text-align: center !important;
       flex-shrink: 0 !important;
+    }
+
+    /* Basic text container for BYOL mode to avoid forcing flex centering */
+    .reveal.reveal-byol .slide-text-container {
+      position: relative !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
     }
 
     /* Generic Badge overlays */
@@ -557,6 +607,13 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
         transition: 'slide',
         view: isScrollView ? 'scroll' : undefined,
         disableLayout: true
+      }).then(() => {
+        const revealEl = document.querySelector('.reveal');
+        if (revealEl) {
+          revealEl.classList.add('reveal-byol');
+        }
+        document.documentElement.classList.add('reveal-mode');
+        document.body.classList.add('reveal-mode');
       });
     });
     """
