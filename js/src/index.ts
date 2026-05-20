@@ -313,10 +313,23 @@ html.reveal-mode.reveal-scroll-active, body.reveal-mode.reveal-scroll-active {
 .reveal {
   background-color: #0d0a06;
   color: #fff;
+  width: 100% !important;
+  height: 100% !important;
 }
 
-/* Zero slide margins (Rule 3) */
+/* Ensure slides cover the full viewport under disableLayout: true */
+.reveal .slides {
+  width: 100% !important;
+  height: 100% !important;
+  inset: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+}
+
 .reveal .slides section.slide-section {
+  width: 100% !important;
   height: 100% !important;
   min-height: 0 !important;
   max-width: none !important;
@@ -325,6 +338,7 @@ html.reveal-mode.reveal-scroll-active, body.reveal-mode.reveal-scroll-active {
   overflow: hidden !important;
   position: relative !important;
   padding: 0 !important;
+  margin: 0 !important;
 }
 
 /* Universal split layouts */
@@ -354,17 +368,7 @@ html.reveal-mode.reveal-scroll-active, body.reveal-mode.reveal-scroll-active {
   box-sizing: border-box !important;
 }
 
-/* Override viewport-relative min-width from Webflow that crams right columns */
-.reveal .kapr-prov-left,
-.reveal .kapr-comp-a-left,
-.reveal .kapr-v1-right,
-.reveal .kapr-v2-left,
-.reveal .kapr-v3-right {
-  min-width: 0 !important;
-  width: 50% !important;
-}
-
-/* Image containment rules (Rule 4) */
+/* Image containment rules */
 .reveal .slide-image-container {
   width: 100% !important;
   height: 100% !important;
@@ -388,12 +392,7 @@ html.reveal-mode.reveal-scroll-active, body.reveal-mode.reveal-scroll-active {
   object-fit: cover !important;
 }
 
-/* Restoration assets in Slide 5 should fit completely without cropping */
-.reveal .kapr-img-restoration img {
-  object-fit: contain !important;
-}
-
-/* 3/5 vertical centering from bottom (= 40% from top) (Rule 1 & 5) */
+/* 3/5 vertical centering from bottom (= 40% from top) */
 .reveal section.slide-section:has(> .slide-text-container),
 .reveal .slide-column:has(> .slide-text-container) {
   display: flex !important;
@@ -425,244 +424,23 @@ html.reveal-mode.reveal-scroll-active, body.reveal-mode.reveal-scroll-active {
   width: 100% !important;
   max-width: 90% !important;
   box-sizing: border-box !important;
-  padding: 0 80px !important; /* ~10% padding */
+  padding: 0 10% !important; /* Generic ~10% padding */
   margin: 0 auto !important;
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
   justify-content: center !important;
   text-align: center !important;
+  flex-shrink: 0 !important;
 }
 
-/* Slide Typography (Rule 6: fill cell as much as possible) */
-.reveal {
-  --h1-font-size: 100px !important;
-  --h2-font-size: 72px !important;
-  --h2-font-size-small: 56px !important;
-  --font-size-l: 32px !important;
-  --font-size-m: 26px !important;
-  --font-size-body: 26px !important;
-}
-
-.reveal h1, .reveal .kp-h1 {
-  font-size: 100px !important;
-  line-height: 1.1 !important;
-  font-weight: 700 !important;
-  margin-bottom: 24px !important;
-}
-.reveal h2, .reveal .kp-h2 {
-  font-size: 72px !important;
-  line-height: 1.15 !important;
-  font-weight: 700 !important;
-  margin-bottom: 24px !important;
-}
-.reveal h2.small, .reveal .kp-h2.small {
-  font-size: 56px !important;
-}
-.reveal h3, .reveal .kp-h3 {
-  font-size: 48px !important;
-  line-height: 1.2 !important;
-  font-weight: 700 !important;
-  margin-bottom: 20px !important;
-}
-.reveal p, .reveal li {
-  font-size: 26px !important;
-  line-height: 1.45 !important;
-  margin-bottom: 16px !important;
-}
-.reveal .kp-body-large {
-  font-size: 32px !important;
-}
-.reveal .kapr-eyebrow, .reveal .kapr-eyebrow-1 {
-  font-weight: 300 !important;
-  font-size: 24px !important;
-  text-transform: uppercase;
-  letter-spacing: 0.15em;
-  margin-bottom: 16px !important;
-  display: block !important;
-}
-
-/* Hero Slide Sizing */
-.reveal .kapr-hero-1 h1 {
-  font-size: 110px !important;
-  line-height: 1.05 !important;
-}
-.reveal .kapr-hero-1 p {
-  font-size: 36px !important;
-}
-
-/* Intro Slide Sizing */
-.reveal .kapr-brief h2 {
-  font-size: 80px !important;
-}
-.reveal .kapr-brief p {
-  font-size: 34px !important;
-}
-
-/* Light background overrides for headings and text that don't have explicit color classes */
-.reveal .slides section.slide-light-bg h1:not(.red):not(.magenta):not(.cream):not(.white-shadow),
-.reveal .slides section.slide-light-bg h2:not(.red):not(.magenta):not(.cream):not(.white-shadow),
-.reveal .slides section.slide-light-bg h3:not(.red):not(.magenta):not(.cream):not(.white-shadow),
-.reveal .slides section.slide-light-bg p:not(.kp-body-cream):not(.kp-body-gray):not(.kp-body-blue):not(.kp-body-darkblue) {
-  color: #0d0a06 !important;
-}
-.reveal .slides section.slide-light-bg li {
-  color: #0d0a06 !important;
-}
-.reveal .slides section.slide-light-bg .kapr-eyebrow,
-.reveal .slides section.slide-light-bg .kapr-eyebrow-1 {
-  color: #0d0a06 !important;
-}
-
-/* Shift lists or columns slightly to prevent vertical overflow */
-.reveal .slide-column .slide-text-container {
-  padding: 0 48px !important;
-}
-.reveal .kapr-rest .slide-text-container {
-  padding: 0 32px !important;
-}
-.reveal .kapr-rest h2 {
-  font-size: 40px !important;
-  margin-bottom: 12px !important;
-}
-.reveal .kapr-rest .kapr-eyebrow {
-  margin-bottom: 8px !important;
-}
-.reveal .kapr-rest p.kp-body-rest {
-  font-size: 18px !important;
-  line-height: 1.35 !important;
-  margin-bottom: 12px !important;
-}
-.reveal .kapr-rest ol {
-  font-size: 15px !important;
-  line-height: 1.3 !important;
-  text-align: left !important;
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-}
-.reveal .kapr-rest li {
-  font-size: 15px !important;
-  margin-bottom: 6px !important;
-}
-
-/* Slide 14 About Vexy Lines specific styles */
-.reveal section.kapr-vl::before,
-.reveal section.kapr-vl::after {
-  flex: 1 1 0% !important;
-}
-.reveal .kapr-vl .slide-text-container {
-  max-width: 92% !important;
-  padding: 0 40px !important;
-}
-.reveal .kapr-vl h2 { font-size: 72px !important; margin-bottom: 12px !important; }
-.reveal .kapr-vl .kapr-vl-lede { font-size: 28px !important; line-height: 1.35 !important; margin-bottom: 24px !important; }
-.reveal .kapr-vl .kapr-vl-cols {
-  display: grid !important;
-  grid-template-columns: 1fr 1fr 1fr !important;
-  gap: 40px !important;
-  margin-top: 16px !important;
-  text-align: left !important;
-}
-.reveal .kapr-vl .kapr-vl-cols h3 { font-size: 32px !important; margin-bottom: 10px !important; margin-top: 0 !important; }
-.reveal .kapr-vl .kapr-vl-cols p { font-size: 22px !important; line-height: 1.4 !important; margin-bottom: 0 !important; }
-
-/* Badge overlays (1.5x larger, no margins) (Rule 2) */
+/* Generic Badge overlays */
 .reveal .slide-badge {
   z-index: 100 !important;
   box-sizing: border-box !important;
-  padding: 40px 50px !important; /* 1.5x padding */
-  border-radius: 16px !important;
-  font-size: 26px !important; /* 1.5x font-size */
-  line-height: 1.45 !important;
 }
-.reveal .slide-badge * {
-  font-size: inherit !important;
-  line-height: inherit !important;
-  margin: 0 !important;
-}
-.reveal .slide-badge h3 {
-  font-size: 36px !important;
-  line-height: 1.2 !important;
-  margin-top: 0 !important;
-  margin-bottom: 12px !important;
-}
-.reveal .slide-badge p {
-  font-size: 26px !important;
-  line-height: 1.45 !important;
-  margin-bottom: 0 !important;
-}
-.reveal .slide-badge span {
-  font-size: 20px !important;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 12px !important;
-  display: block !important;
-}
-
-/* Specific badge color palettes to preserve theme contrast */
-.reveal .kapr-bleed-card-1 {
-  color: #0d0a06 !important;
-  background-color: #f7eae1 !important;
-}
-.reveal .kapr-comp-b-card {
-  color: #0d0a06 !important;
-  background-color: #f7eae1 !important;
-}
-.reveal .kapr-comp-b-card h3 { color: #0d0a06 !important; }
-.reveal .kapr-comp-b-card p { color: #3a3a3a !important; }
-.reveal .kapr-comp-b-card span { color: #920796 !important; }
-
-.reveal .kapr-v1-ui-card {
-  color: #fdf8ed !important;
-  background-color: #37424f !important;
-}
-.reveal .kapr-v1-ui-card h3 { color: #fdf8ed !important; }
-.reveal .kapr-v1-ui-card p { color: #d0c8b8 !important; }
-.reveal .kapr-v1-ui-card span { color: #d6ff09 !important; }
-
-.reveal .kapr-v2-ui-card {
-  color: #1651a5 !important;
-  background-color: #fdf8ed !important;
-  border: 1px solid #1651a5 !important;
-}
-.reveal .kapr-v2-ui-card h3 { color: #1651a5 !important; }
-.reveal .kapr-v2-ui-card p { color: #3b6fb6 !important; }
-.reveal .kapr-v2-ui-card span { color: #c80ace !important; }
-
-.reveal .kapr-v3-ui-card {
-  color: #16110a !important;
-  background-color: #d6ff09 !important;
-}
-.reveal .kapr-v3-ui-card h3 { color: #16110a !important; }
-.reveal .kapr-v3-ui-card p { color: #3c3325 !important; }
-.reveal .kapr-v3-ui-card span { color: #c80ace !important; }
-
-/* Theme color contrast overrides for standard columns */
-.reveal .kapr-prov-right { color: #000 !important; }
-.reveal .kapr-prov-right .kapr-eyebrow-1 { color: #333 !important; }
-.reveal .kapr-prov-right h2 { color: #000 !important; }
-.reveal .kapr-prov-right p { color: #222 !important; }
-
-.reveal .kapr-v1-left { color: #fdf8ed !important; }
-.reveal .kapr-v1-left .kapr-eyebrow { color: #d6ff09 !important; }
-.reveal .kapr-v1-left h2 { color: #fdf8ed !important; }
-.reveal .kapr-v1-left p { color: #fdf8ed !important; }
-
-.reveal .kapr-v2-right { color: #1651a5 !important; }
-.reveal .kapr-v2-right .kapr-eyebrow { color: #c80ace !important; }
-.reveal .kapr-v2-right h2 { color: #cd2426 !important; }
-.reveal .kapr-v2-right p { color: #1651a5 !important; }
-
-.reveal .kapr-v3-left { color: #16110a !important; }
-.reveal .kapr-v3-left .kapr-eyebrow { color: #c80ace !important; }
-.reveal .kapr-v3-left h2 { color: #111947 !important; }
-.reveal .kapr-v3-left p { color: #111947 !important; }
 
 /* Hide outer Webflow branding/menu elements and helper widgets */
-html body section.vx-menu-section, 
-html body .vx-footer-vlkapr, 
-html body vexy-menu, 
-html body vexy-footer,
 html body .w-webflow-badge,
 html body #freshworks-container,
 html body #freshworks-frame,
@@ -932,7 +710,8 @@ export async function convertToReveal(options: ConvertOptions): Promise<void> {
         hash: true,
         transition: 'slide',
         backgroundTransition: 'slide',
-        view: isScrollView ? 'scroll' : undefined
+        view: isScrollView ? 'scroll' : undefined,
+        disableLayout: true
       };
       
       const mergedRevealOptions = {

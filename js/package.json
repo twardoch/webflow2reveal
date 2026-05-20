@@ -1,6 +1,6 @@
 {
   "name": "webflow2revealjs",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Client-side library to convert Webflow pages to Reveal.js slides",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
