@@ -10,7 +10,7 @@ __pycache__/
 .Python
 build/
 develop-eggs/
-dist/
+/dist/
 downloads/
 eggs/
 .eggs/
@@ -234,5 +234,4 @@ lerna-debug.log*
 # TypeScript/JS compilation outputs
 /js/dist/
 /js/node_modules/
-/docs/dist/
 

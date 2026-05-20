@@ -290,7 +290,9 @@
     const defaultExample = 'https://vexy-art.webflow.io/lines/case-study-kapr';
 
     // CORS proxies helper
-    const corsProxy = 'https://api.allorigins.win/raw?url=';
+    // Detect if running on localhost to use local proxy, otherwise fall back to public proxy
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const corsProxy = isLocalhost ? '/proxy/' : 'https://api.allorigins.win/raw?url=';
 
     async function loadPresentation(url) {
       if (!url) return;

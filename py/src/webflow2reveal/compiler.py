@@ -461,16 +461,39 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
     }
 
     /* 3/5 vertical centering from bottom (= 40% from top) (Rule 1 & 5) */
+    .reveal section.slide-section:has(> .slide-text-container),
+    .reveal .slide-column:has(> .slide-text-container) {
+      display: flex !important;
+      flex-direction: column !important;
+      box-sizing: border-box !important;
+      padding-top: 40px !important;
+      padding-bottom: 40px !important;
+    }
+
+    .reveal section.slide-section:has(> .slide-text-container)::before,
+    .reveal .slide-column:has(> .slide-text-container)::before {
+      content: "" !important;
+      display: block !important;
+      flex: 4 1 0% !important;
+    }
+
+    .reveal section.slide-section:has(> .slide-text-container)::after,
+    .reveal .slide-column:has(> .slide-text-container)::after {
+      content: "" !important;
+      display: block !important;
+      flex: 6 1 0% !important;
+    }
+
     .reveal .slide-text-container {
-      position: absolute !important;
-      top: 50% !important;
-      left: 50% !important;
-      transform: translate(-50%, -50%) !important;
+      position: relative !important;
+      top: auto !important;
+      left: auto !important;
+      transform: none !important;
       width: 100% !important;
       max-width: 90% !important;
       box-sizing: border-box !important;
       padding: 0 80px !important; /* ~10% padding */
-      margin: 0 !important;
+      margin: 0 auto !important;
       display: flex !important;
       flex-direction: column !important;
       align-items: center !important;
@@ -562,19 +585,39 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
     .reveal .slide-column .slide-text-container {
       padding: 0 48px !important;
     }
-    .reveal .kapr-rest ol {
-      font-size: 20px !important;
+    .reveal .kapr-rest .slide-text-container {
+      padding: 0 32px !important;
+    }
+    .reveal .kapr-rest h2 {
+      font-size: 40px !important;
+      margin-bottom: 12px !important;
+    }
+    .reveal .kapr-rest .kapr-eyebrow {
+      margin-bottom: 8px !important;
+    }
+    .reveal .kapr-rest p.kp-body-rest {
+      font-size: 18px !important;
       line-height: 1.35 !important;
+      margin-bottom: 12px !important;
+    }
+    .reveal .kapr-rest ol {
+      font-size: 15px !important;
+      line-height: 1.3 !important;
       text-align: left !important;
+      margin-top: 0 !important;
+      margin-bottom: 0 !important;
     }
     .reveal .kapr-rest li {
-      font-size: 20px !important;
-      margin-bottom: 8px !important;
+      font-size: 15px !important;
+      margin-bottom: 6px !important;
     }
 
     /* Slide 14 About Vexy Lines specific styles */
+    .reveal section.kapr-vl::before,
+    .reveal section.kapr-vl::after {
+      flex: 1 1 0% !important;
+    }
     .reveal .kapr-vl .slide-text-container {
-      top: 50% !important;
       max-width: 92% !important;
       padding: 0 40px !important;
     }
@@ -682,12 +725,19 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
     .reveal .kapr-v3-left h2 { color: #111947 !important; }
     .reveal .kapr-v3-left p { color: #111947 !important; }
 
-    /* Hide outer Webflow branding/menu elements */
-    section.vx-menu-section, 
-    .vx-footer-vlkapr, 
-    vexy-menu, 
-    vexy-footer {
+    /* Hide outer Webflow branding/menu elements and helper widgets */
+    html body section.vx-menu-section, 
+    html body .vx-footer-vlkapr, 
+    html body vexy-menu, 
+    html body vexy-footer,
+    html body .w-webflow-badge,
+    html body #freshworks-container,
+    html body #freshworks-frame,
+    html body iframe[id*="freshworks"],
+    html body [class*="freshworks"] {
       display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
     }
     """
     soup.head.append(custom_style)
