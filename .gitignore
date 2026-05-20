@@ -216,3 +216,23 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# macOS
+.DS_Store
+
+# Git-tag-based dynamic version file
+__version__.py
+
+# Node/JS package artifacts
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+lerna-debug.log*
+
+# TypeScript/JS compilation outputs
+/js/dist/
+/js/node_modules/
+/docs/dist/
+

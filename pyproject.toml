@@ -1,0 +1,39 @@
+# this_file: pyproject.toml
+
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "webflow2reveal"
+dynamic = ["version"]
+description = "Universal Webflow to Reveal.js converter"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Adam Twardoch", email = "adam@twardoch.com"}
+]
+dependencies = [
+    "beautifulsoup4>=4.12.0",
+    "requests>=2.31.0",
+    "fire>=0.5.0",
+]
+
+[project.scripts]
+webflow2reveal = "webflow2reveal.__main__:main"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.version.raw-options]
+local_scheme = "no-local-version"
+
+[tool.hatch.build.targets.wheel]
+packages = ["py/src/webflow2reveal"]
+
+[tool.hatch.build.targets.wheel.sources]
+"py/src" = ""
+
+[tool.hatch.build.hooks.vcs]
+version-file = "py/src/webflow2reveal/__version__.py"

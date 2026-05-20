@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Webflow to Reveal.js Converter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0f0c08;
+      --accent: #d6ff09;
+      --accent-hover: #c4eb00;
+      --card-bg: rgba(24, 20, 15, 0.7);
+      --text-main: #fcfaf7;
+      --text-muted: #a39f98;
+      --border-color: rgba(214, 255, 9, 0.15);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body.setup-mode {
+      background: radial-gradient(circle at 50% 50%, #201a12 0%, var(--bg-dark) 100%);
+      font-family: 'Outfit', sans-serif;
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    /* Presentation mode overrides */
+    body.reveal-viewport {
+      background: #0d0a06;
+      overflow: hidden;
+    }
+
+    .container {
+      max-width: 680px;
+      width: 100%;
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      padding: 48px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+      text-align: center;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    h1 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-weight: 700;
+      font-size: 42px;
+      line-height: 1.1;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+
+    h1 span {
+      color: var(--accent);
+      font-style: italic;
+    }
+
+    p.subtitle {
+      font-size: 18px;
+      font-weight: 300;
+      color: var(--text-muted);
+      margin-bottom: 40px;
+      line-height: 1.5;
+    }
+
+    .form-group {
+      position: relative;
+      margin-bottom: 24px;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    input[type="url"] {
+      width: 100%;
+      padding: 18px 24px;
+      background: rgba(15, 12, 8, 0.6);
+      border: 1px solid rgba(252, 250, 247, 0.1);
+      border-radius: 14px;
+      font-family: inherit;
+      font-size: 16px;
+      color: var(--text-main);
+      outline: none;
+      transition: all 0.2s ease;
+      padding-right: 140px;
+    }
+
+    input[type="url"]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 15px rgba(214, 255, 9, 0.15);
+    }
+
+    button.btn-submit {
+      position: absolute;
+      right: 8px;
+      top: 8px;
+      bottom: 8px;
+      background: var(--accent);
+      color: #0f0c08;
+      border: none;
+      border-radius: 10px;
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 15px;
+      padding: 0 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    button.btn-submit:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+    }
+
+    button.btn-submit:active {
+      transform: translateY(0);
+    }
+
+    .examples {
+      margin-top: 32px;
+      text-align: left;
+      border-top: 1px solid rgba(252, 250, 247, 0.08);
+      padding-top: 24px;
+    }
+
+    .examples h3 {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+
+    .example-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(252, 250, 247, 0.03);
+      border: 1px solid rgba(252, 250, 247, 0.05);
+      border-radius: 12px;
+      padding: 14px 20px;
+      color: var(--text-main);
+      text-decoration: none;
+      font-size: 15px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .example-link:hover {
+      background: rgba(214, 255, 9, 0.05);
+      border-color: rgba(214, 255, 9, 0.3);
+    }
+
+    .example-link span.title {
+      font-weight: 600;
+    }
+
+    .example-link span.url {
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    /* Loading overlay */
+    .loader-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--bg-dark);
+      z-index: 10000;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: var(--text-main);
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .loader-overlay.active {
+      display: flex;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 3px solid rgba(214, 255, 9, 0.1);
+      border-radius: 50%;
+      border-top-color: var(--accent);
+      animation: spin 1s linear infinite;
+      margin-bottom: 24px;
+    }
+
+    .loader-text {
+      font-size: 18px;
+      font-weight: 300;
+      letter-spacing: 0.05em;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    footer {
+      margin-top: 40px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body class="setup-mode">
+  <div class="container" id="setup-container">
+    <h1>webflow<span>2</span>reveal</h1>
+    <p class="subtitle">Convert Webflow landing pages into premium interactive Reveal.js presentations dynamically.</p>
+    
+    <form id="url-form">
+      <div class="form-group">
+        <div class="input-wrapper">
+          <input type="url" id="webflow-url" placeholder="https://your-site.webflow.io/page" required>
+          <button type="submit" class="btn-submit">Generate</button>
+        </div>
+      </div>
+    </form>
+
+    <div class="examples">
+      <h3>Demo Example</h3>
+      <a class="example-link" id="demo-example-btn">
+        <div>
+          <span class="title">Albert Kapr Poster Case Study</span><br>
+          <span class="url">vexy-art.webflow.io/lines/case-study-kapr</span>
+        </div>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </a>
+    </div>
+
+    <footer>
+      Powered by <a href="https://github.com/twardoch/webflow2reveal" target="_blank">webflow2reveal</a> & Reveal.js
+    </footer>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loader-overlay" id="loading-overlay">
+    <div class="spinner"></div>
+    <div class="loader-text" id="loader-status">Fetching Webflow Page...</div>
+  </div>
+
+  <!-- Load Webflow2Reveal dynamically compiled package -->
+  <script src="dist/index.global.js"></script>
+  
+  <script>
+    const form = document.getElementById('url-form');
+    const input = document.getElementById('webflow-url');
+    const setupContainer = document.getElementById('setup-container');
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const loaderStatus = document.getElementById('loader-status');
+    const demoBtn = document.getElementById('demo-example-btn');
+
+    const defaultExample = 'https://vexy-art.webflow.io/lines/case-study-kapr';
+
+    // CORS proxies helper
+    const corsProxy = 'https://api.allorigins.win/raw?url=';
+
+    async function loadPresentation(url) {
+      if (!url) return;
+      
+      // Update loader status
+      loadingOverlay.classList.add('active');
+      loaderStatus.textContent = 'Fetching Webflow layout...';
+      
+      try {
+        // Change body styling classes for Reveal.js
+        document.body.className = '';
+        
+        // Execute conversion
+        await Webflow2Reveal.convertToReveal({
+          sourceUrl: url,
+          corsProxy: corsProxy,
+          onBeforeInit: () => {
+            loaderStatus.textContent = 'Initializing Reveal.js...';
+          },
+          onAfterInit: () => {
+            // Hide loading overlay
+            loadingOverlay.classList.remove('active');
+          }
+        });
+      } catch (err) {
+        console.error(err);
+        alert('Error converting Webflow page: ' + err.message);
+        document.body.className = 'setup-mode';
+        loadingOverlay.classList.remove('active');
+      }
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const url = input.value.trim();
+      if (url) {
+        // Set query parameter so slide deck is shareable and bookmarkable
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.set('url', url);
+        window.history.pushState({}, '', newUrl);
+        loadPresentation(url);
+      }
+    });
+
+    demoBtn.addEventListener('click', () => {
+      input.value = defaultExample;
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.set('url', defaultExample);
+      window.history.pushState({}, '', newUrl);
+      loadPresentation(defaultExample);
+    });
+
+    // Check search params on load
+    window.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search);
+      const url = params.get('url');
+      if (url) {
+        input.value = url;
+        loadPresentation(url);
+      }
+    });
+  </script>
+</body>
+</html>

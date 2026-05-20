@@ -1,0 +1,28 @@
+{
+  "name": "webflow2revealjs",
+  "version": "0.1.0",
+  "description": "Client-side library to convert Webflow pages to Reveal.js slides",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm,iife --dts --global-name Webflow2Reveal",
+    "dev": "tsup src/index.ts --format cjs,esm,iife --dts --global-name Webflow2Reveal --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "webflow",
+    "revealjs",
+    "slides",
+    "converter"
+  ],
+  "author": "Adam Twardoch <adam@twardoch.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "tsup": "^8.0.2",
+    "typescript": "^5.3.3"
+  }
+}
