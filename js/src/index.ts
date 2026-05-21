@@ -29,6 +29,7 @@ export function parseCssBackgroundColors(cssContent: string): Record<string, str
   let depth = 0;
   let selectorBuffer = '';
   let rulesBuffer = '';
+  const classSpecificity: Record<string, number> = {};
   
   function processBlock(selector: string, rules: string) {
     selector = selector.trim();
@@ -60,10 +61,23 @@ export function parseCssBackgroundColors(cssContent: string): Record<string, str
       const parts = selector.split(',');
       for (let part of parts) {
         part = part.trim();
+        // Basic specificity: count classes and IDs
+        const specificity = (part.match(/\./g) || []).length + (part.match(/#/g) || []).length * 10;
+        
         const classRegex = /\.([a-zA-Z0-9_-]+)/g;
         let classMatch: RegExpExecArray | null;
+        const classesInPart: string[] = [];
         while ((classMatch = classRegex.exec(part)) !== null) {
-          classColors[classMatch[1]] = color;
+          classesInPart.push(classMatch[1]);
+        }
+        
+        if (classesInPart.length > 0) {
+          // Apply color only to the last/most specific class in the compound selector
+          const cls = classesInPart[classesInPart.length - 1];
+          if (specificity >= (classSpecificity[cls] || 0)) {
+            classColors[cls] = color;
+            classSpecificity[cls] = specificity;
+          }
         }
       }
     }
@@ -118,7 +132,7 @@ export function getSectionBgColor(classes: string[], classColors: Record<string,
   for (let i = classes.length - 1; i >= 0; i--) {
     const cls = classes[i];
     const color = classColors[cls];
-    if (color && !['transparent', '#0000', 'rgba(0,0,0,0)', 'rgba(0, 0, 0, 0)'].includes(color)) {
+    if (color) {
       return color;
     }
   }
