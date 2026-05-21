@@ -575,6 +575,7 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
       padding: 0 !important;
       max-width: none !important;
       max-height: none !important;
+      text-align: inherit !important;
     }
 
     .reveal .slides section.slide-section {
