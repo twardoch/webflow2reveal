@@ -537,6 +537,15 @@ export async function convertToReveal(options: ConvertOptions): Promise<void> {
   const target = options.targetElement || document.body;
   let htmlContent = options.htmlContent || '';
   const isInPlace = !htmlContent && !options.sourceUrl;
+
+  // Capture original body background styles before conversion / Reveal.js initialization
+  const bodyStyles = window.getComputedStyle(document.body);
+  const bgCol = bodyStyles.backgroundColor;
+  const bgImg = bodyStyles.backgroundImage;
+  const bgSize = bodyStyles.backgroundSize;
+  const bgRepeat = bodyStyles.backgroundRepeat;
+  const bgPos = bodyStyles.backgroundPosition;
+  const bgAttachment = bodyStyles.backgroundAttachment;
   
   if (!htmlContent && options.sourceUrl) {
     console.log(`Fetching Webflow page content from: ${options.sourceUrl}`);
@@ -664,10 +673,22 @@ export async function convertToReveal(options: ConvertOptions): Promise<void> {
   // 4. Normalize DOM structure inside reveal
   normalizeRevealDom(revealDiv, classColors);
 
+  // Find body background color as fallback for transparent slides
+  let bodyBg: string | null = null;
+  if (document.body) {
+    bodyBg = getSectionBgColor(Array.from(document.body.classList), classColors);
+  }
+
   // 5. Determine background brightness light/dark styles
   const finalSections = Array.from(slidesDiv.getElementsByTagName('section'));
   for (const sec of finalSections) {
-    const bg = sec.getAttribute('data-background-color');
+    let bg = sec.getAttribute('data-background-color');
+    if (bg) {
+      bg = bg.trim().toLowerCase();
+      if (['transparent', '#0000', 'rgba(0,0,0,0)', 'rgba(0, 0, 0, 0)'].includes(bg)) {
+        bg = bodyBg || '#000000';
+      }
+    }
     if (bg) {
       const bgVal = bg.trim().toLowerCase();
       let isLight = false;
@@ -743,12 +764,26 @@ export async function convertToReveal(options: ConvertOptions): Promise<void> {
   }
 
   // 7. Inject styles
-  if (!document.head.querySelector('#webflow2reveal-styles')) {
-    const style = document.createElement('style');
-    style.id = 'webflow2reveal-styles';
-    style.textContent = CUSTOM_CSS_OVERRIDE;
-    document.head.appendChild(style);
+  let styleEl = document.head.querySelector('#webflow2reveal-styles') as HTMLStyleElement | null;
+  if (!styleEl) {
+    styleEl = document.createElement('style');
+    styleEl.id = 'webflow2reveal-styles';
+    document.head.appendChild(styleEl);
   }
+
+  let dynamicBodyStyle = '';
+  if (bgCol) dynamicBodyStyle += `background-color: ${bgCol} !important;\n`;
+  if (bgImg) dynamicBodyStyle += `background-image: ${bgImg} !important;\n`;
+  if (bgSize) dynamicBodyStyle += `background-size: ${bgSize} !important;\n`;
+  if (bgRepeat) dynamicBodyStyle += `background-repeat: ${bgRepeat} !important;\n`;
+  if (bgPos) dynamicBodyStyle += `background-position: ${bgPos} !important;\n`;
+  if (bgAttachment) dynamicBodyStyle += `background-attachment: ${bgAttachment} !important;\n`;
+
+  styleEl.textContent = CUSTOM_CSS_OVERRIDE + `
+    body.reveal-viewport {
+      ${dynamicBodyStyle}
+    }
+  `;
 
   // Inject Reveal css stylesheet
   if (!document.head.querySelector('link[href*="reveal.min.css"]')) {

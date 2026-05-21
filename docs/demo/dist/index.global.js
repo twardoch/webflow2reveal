@@ -500,6 +500,13 @@ body.reveal-mode > :not(.reveal):not(.webflow2reveal-close) {
     const target = options.targetElement || document.body;
     let htmlContent = options.htmlContent || "";
     const isInPlace = !htmlContent && !options.sourceUrl;
+    const bodyStyles = window.getComputedStyle(document.body);
+    const bgCol = bodyStyles.backgroundColor;
+    const bgImg = bodyStyles.backgroundImage;
+    const bgSize = bodyStyles.backgroundSize;
+    const bgRepeat = bodyStyles.backgroundRepeat;
+    const bgPos = bodyStyles.backgroundPosition;
+    const bgAttachment = bodyStyles.backgroundAttachment;
     if (!htmlContent && options.sourceUrl) {
       console.log(`Fetching Webflow page content from: ${options.sourceUrl}`);
       const fetchUrl = options.corsProxy ? options.corsProxy + encodeURIComponent(options.sourceUrl) : options.sourceUrl;
@@ -602,9 +609,19 @@ body.reveal-mode > :not(.reveal):not(.webflow2reveal-close) {
       }
     }
     normalizeRevealDom(revealDiv, classColors);
+    let bodyBg = null;
+    if (document.body) {
+      bodyBg = getSectionBgColor(Array.from(document.body.classList), classColors);
+    }
     const finalSections = Array.from(slidesDiv.getElementsByTagName("section"));
     for (const sec of finalSections) {
-      const bg = sec.getAttribute("data-background-color");
+      let bg = sec.getAttribute("data-background-color");
+      if (bg) {
+        bg = bg.trim().toLowerCase();
+        if (["transparent", "#0000", "rgba(0,0,0,0)", "rgba(0, 0, 0, 0)"].includes(bg)) {
+          bg = bodyBg || "#000000";
+        }
+      }
       if (bg) {
         const bgVal = bg.trim().toLowerCase();
         let isLight = false;
@@ -673,12 +690,30 @@ body.reveal-mode > :not(.reveal):not(.webflow2reveal-close) {
       target.innerHTML = "";
       target.appendChild(revealDiv);
     }
-    if (!document.head.querySelector("#webflow2reveal-styles")) {
-      const style = document.createElement("style");
-      style.id = "webflow2reveal-styles";
-      style.textContent = CUSTOM_CSS_OVERRIDE;
-      document.head.appendChild(style);
+    let styleEl = document.head.querySelector("#webflow2reveal-styles");
+    if (!styleEl) {
+      styleEl = document.createElement("style");
+      styleEl.id = "webflow2reveal-styles";
+      document.head.appendChild(styleEl);
     }
+    let dynamicBodyStyle = "";
+    if (bgCol) dynamicBodyStyle += `background-color: ${bgCol} !important;
+`;
+    if (bgImg) dynamicBodyStyle += `background-image: ${bgImg} !important;
+`;
+    if (bgSize) dynamicBodyStyle += `background-size: ${bgSize} !important;
+`;
+    if (bgRepeat) dynamicBodyStyle += `background-repeat: ${bgRepeat} !important;
+`;
+    if (bgPos) dynamicBodyStyle += `background-position: ${bgPos} !important;
+`;
+    if (bgAttachment) dynamicBodyStyle += `background-attachment: ${bgAttachment} !important;
+`;
+    styleEl.textContent = CUSTOM_CSS_OVERRIDE + `
+    body.reveal-viewport {
+      ${dynamicBodyStyle}
+    }
+  `;
     if (!document.head.querySelector('link[href*="reveal.min.css"]')) {
       const link = document.createElement("link");
       link.rel = "stylesheet";
