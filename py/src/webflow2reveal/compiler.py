@@ -22,6 +22,7 @@ def parse_css_background_colors(css_content: str) -> dict:
     bg_pattern = re.compile(r'\bbackground:\s*([^;!]+)', re.IGNORECASE)
     
     class_colors = {}
+    class_specificity = {}
     
     for selector, rules in block_pattern.findall(css_content):
         bg_color_match = bg_color_pattern.search(rules)
@@ -39,10 +40,18 @@ def parse_css_background_colors(css_content: str) -> dict:
         if color:
             for part in selector.split(','):
                 part = part.strip()
+                # Basic specificity: count classes and IDs
+                specificity = part.count('.') + part.count('#') * 10
+                
                 # Find class names like .kapr-brief
-                for cls in re.findall(r'\.([a-zA-Z0-9_-]+)', part):
-                    class_colors[cls] = color
-                    
+                classes_in_part = re.findall(r'\.([a-zA-Z0-9_-]+)', part)
+                if classes_in_part:
+                    # Apply color only to the last/most specific class in the compound selector
+                    cls = classes_in_part[-1]
+                    if specificity >= class_specificity.get(cls, 0):
+                        class_colors[cls] = color
+                        class_specificity[cls] = specificity
+                        
     return class_colors
 
 def is_slide_section(section) -> bool:
@@ -64,11 +73,11 @@ def is_slide_section(section) -> bool:
 
 def get_section_bg_color(classes: list, class_colors: dict) -> str:
     """
-    Resolves the background color for a list of classes, picking the most specific non-transparent color.
+    Resolves the background color for a list of classes, picking the most specific color.
     """
     for cls in reversed(classes):
         color = class_colors.get(cls)
-        if color and color not in ('transparent', '#0000', 'rgba(0,0,0,0)', 'rgba(0, 0, 0, 0)'):
+        if color:
             return color
     return None
 
