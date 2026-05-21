@@ -35,6 +35,7 @@ var Webflow2Reveal = (() => {
     let depth = 0;
     let selectorBuffer = "";
     let rulesBuffer = "";
+    const classSpecificity = {};
     function processBlock(selector, rules) {
       selector = selector.trim();
       rules = rules.trim();
@@ -59,10 +60,19 @@ var Webflow2Reveal = (() => {
         const parts = selector.split(",");
         for (let part of parts) {
           part = part.trim();
+          const specificity = (part.match(/\./g) || []).length + (part.match(/#/g) || []).length * 10;
           const classRegex = /\.([a-zA-Z0-9_-]+)/g;
           let classMatch;
+          const classesInPart = [];
           while ((classMatch = classRegex.exec(part)) !== null) {
-            classColors[classMatch[1]] = color;
+            classesInPart.push(classMatch[1]);
+          }
+          if (classesInPart.length > 0) {
+            const cls = classesInPart[classesInPart.length - 1];
+            if (specificity >= (classSpecificity[cls] || 0)) {
+              classColors[cls] = color;
+              classSpecificity[cls] = specificity;
+            }
           }
         }
       }
@@ -111,7 +121,7 @@ var Webflow2Reveal = (() => {
     for (let i = classes.length - 1; i >= 0; i--) {
       const cls = classes[i];
       const color = classColors[cls];
-      if (color && !["transparent", "#0000", "rgba(0,0,0,0)", "rgba(0, 0, 0, 0)"].includes(color)) {
+      if (color) {
         return color;
       }
     }
