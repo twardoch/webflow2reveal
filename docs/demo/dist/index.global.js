@@ -315,6 +315,7 @@ html.reveal-mode.reveal-scroll-active, body.reveal-mode.reveal-scroll-active {
   padding: 0 !important;
   max-width: none !important;
   max-height: none !important;
+  text-align: inherit !important;
 }
 
 .reveal .slides section.slide-section {
