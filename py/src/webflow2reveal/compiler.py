@@ -575,11 +575,14 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
 
     /* Presentation window baseline styles */
     .reveal {
-      background-color: revert;
+      background-color: transparent !important;
       color: inherit;
       text-align: left;
       width: 100% !important;
       height: 100% !important;
+    }
+    .reveal .slide-background {
+      background-color: transparent !important;
     }
 
     /* Revert Reveal's intrusive text styles under BYOL mode */
