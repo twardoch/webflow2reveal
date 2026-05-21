@@ -566,6 +566,10 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
       text-align: inherit !important;
     }
 
+    .reveal-viewport {
+      line-height: inherit !important;
+    }
+
     /* Ensure slides cover the full viewport under disableLayout: true */
     .reveal .slides {
       width: 100% !important;

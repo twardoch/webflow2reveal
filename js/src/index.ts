@@ -338,6 +338,10 @@ html.reveal-mode.reveal-scroll-active, body.reveal-mode.reveal-scroll-active {
   text-align: inherit !important;
 }
 
+.reveal-viewport {
+  line-height: inherit !important;
+}
+
 /* Ensure slides cover the full viewport under disableLayout: true */
 .reveal .slides {
   width: 100% !important;
