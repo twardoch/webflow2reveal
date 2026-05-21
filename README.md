@@ -106,3 +106,6 @@ both packages.
 ## License
 
 MIT © Adam Twardoch.
+
+---
+
