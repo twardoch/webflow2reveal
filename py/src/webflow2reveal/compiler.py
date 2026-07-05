@@ -1,33 +1,35 @@
 # this_file: py/src/webflow2reveal/compiler.py
 
+import http.server
 import os
 import re
-import sys
-import http.server
 import socketserver
+import sys
 from urllib.parse import urljoin
-import requests
-from bs4 import BeautifulSoup
 
-def parse_css_background_colors(css_content: str) -> dict:
+import requests
+from bs4 import BeautifulSoup, Tag
+
+
+def parse_css_background_colors(css_content: str) -> dict[str, str]:
     """
     Parses CSS rules from text and maps class selectors to background-colors.
     """
     # Remove comments
     css_content = re.sub(r'/\*.*?\*/', '', css_content, flags=re.DOTALL)
-    
+
     # Match standard selector { rules } blocks
     block_pattern = re.compile(r'([^{]+)\{([^}]+)\}', re.DOTALL)
     bg_color_pattern = re.compile(r'background-color:\s*([^;!]+)', re.IGNORECASE)
     bg_pattern = re.compile(r'\bbackground:\s*([^;!]+)', re.IGNORECASE)
-    
-    class_colors = {}
-    class_specificity = {}
-    
+
+    class_colors: dict[str, str] = {}
+    class_specificity: dict[str, int] = {}
+
     for selector, rules in block_pattern.findall(css_content):
         bg_color_match = bg_color_pattern.search(rules)
         bg_match = bg_pattern.search(rules)
-        
+
         color = None
         if bg_color_match:
             color = bg_color_match.group(1).strip()
@@ -36,13 +38,13 @@ def parse_css_background_colors(css_content: str) -> dict:
             # Simple check if the background property acts like a solid color
             if val.startswith('#') or val in ('red', 'blue', 'green', 'white', 'black', 'transparent') or val.startswith('rgb'):
                 color = val
-                
+
         if color:
             for part in selector.split(','):
                 part = part.strip()
                 # Basic specificity: count classes and IDs
                 specificity = part.count('.') + part.count('#') * 10
-                
+
                 # Find class names like .kapr-brief
                 classes_in_part = re.findall(r'\.([a-zA-Z0-9_-]+)', part)
                 if classes_in_part:
@@ -51,16 +53,20 @@ def parse_css_background_colors(css_content: str) -> dict:
                     if specificity >= class_specificity.get(cls, 0):
                         class_colors[cls] = color
                         class_specificity[cls] = specificity
-                        
+
     return class_colors
 
-def is_slide_section(section) -> bool:
+def is_slide_section(section: Tag) -> bool:
     """
     Determines if a section tag is likely to be a slide, filtering out navbar and footer.
+
+    The heuristic is deliberately conservative: a Webflow page names its chrome
+    (menu, nav, footer, header, banner) with those words in the class list, so any
+    section carrying one of them is treated as page furniture, not a slide.
     """
     classes = section.get('class', [])
     classes_str = ' '.join(classes).lower()
-    
+
     # Filter out known header/footer/menu sections
     if any(k in classes_str for k in ('menu', 'nav', 'footer', 'header', 'banner')):
         return False
@@ -68,12 +74,17 @@ def is_slide_section(section) -> bool:
         return False
     if section.find('vexy-menu') or section.find('vexy-footer'):
         return False
-        
+
     return True
 
-def get_section_bg_color(classes: list, class_colors: dict) -> str:
+def get_section_bg_color(
+    classes: list[str], class_colors: dict[str, str]
+) -> str | None:
     """
     Resolves the background color for a list of classes, picking the most specific color.
+
+    Webflow appends its most specific class last, so we walk the list in reverse
+    and return the first class that carries a color.
     """
     for cls in reversed(classes):
         color = class_colors.get(cls)
@@ -81,18 +92,18 @@ def get_section_bg_color(classes: list, class_colors: dict) -> str:
             return color
     return None
 
-def add_class(tag, class_name):
+def add_class(tag: Tag, class_name: str) -> None:
     classes = tag.get("class", [])
     if class_name not in classes:
         classes.append(class_name)
         tag["class"] = classes
 
-def wrap_contents_in_div(soup, parent_tag, wrapper_class):
+def wrap_contents_in_div(soup: BeautifulSoup, parent_tag: Tag, wrapper_class: str) -> None:
     wrapper = soup.new_tag("div", attrs={"class": wrapper_class})
     children = list(parent_tag.contents)
     to_wrap = []
     to_keep = []
-    
+
     for child in children:
         if child.name in ('script', 'style'):
             to_keep.append(child)
@@ -100,20 +111,20 @@ def wrap_contents_in_div(soup, parent_tag, wrapper_class):
             to_keep.append(child)
         else:
             to_wrap.append(child)
-            
+
     for child in to_wrap:
         wrapper.append(child.extract())
-        
+
     parent_tag.append(wrapper)
     for child in to_keep:
         parent_tag.append(child.extract())
 
-def normalize_reveal_dom(soup, class_colors):
+def normalize_reveal_dom(soup: BeautifulSoup, class_colors: dict[str, str]) -> None:
     sections = [sec for sec in soup.find_all("section") if is_slide_section(sec)]
-    
+
     for sec in sections:
         add_class(sec, "slide-section")
-        
+
         # 1. Background color extraction for this section
         sec_bg = get_section_bg_color(sec.get("class", []), class_colors)
         if sec_bg and not sec.get("data-background-color"):
@@ -130,7 +141,7 @@ def normalize_reveal_dom(soup, class_colors):
             if 'card' in div_classes or 'badge' in div_classes:
                 badge_el = div
                 break
-                
+
         if badge_el:
             add_class(badge_el, "slide-badge")
             # If there's an image, mark it cover
@@ -147,7 +158,7 @@ def normalize_reveal_dom(soup, class_colors):
                 classes_str = ' '.join(child.get('class', [])).lower()
                 if not any(k in classes_str for k in ('menu', 'nav', 'footer', 'mask', 'header', 'banner')):
                     direct_children.append(child)
-                    
+
         # Check if single direct child is a grid/container wrapper
         grid_wrapper = None
         layout_elements = direct_children
@@ -169,15 +180,15 @@ def normalize_reveal_dom(soup, class_colors):
         if len(layout_elements) == 2:
             parent_container = grid_wrapper if grid_wrapper else sec
             add_class(parent_container, "slide-split-layout")
-            
+
             for col in layout_elements:
                 add_class(col, "slide-column")
-                
+
                 # Propagate background color if any
                 col_bg = get_section_bg_color(col.get("class", []), class_colors)
                 if col_bg:
                     col['style'] = col.get('style', '') + f"; background-color: {col_bg} !important;"
-                    
+
                 # Identify if it contains an image
                 img_el = col.find("img")
                 if img_el:
@@ -189,7 +200,7 @@ def normalize_reveal_dom(soup, class_colors):
                     children = [c for c in col.find_all(recursive=False) if c.name == 'div']
                     if len(children) == 1 and any('text' in cls.lower() or 'head' in cls.lower() for cls in children[0].get('class', [])):
                         text_wrapper = children[0]
-                        
+
                     if text_wrapper:
                         add_class(text_wrapper, "slide-text-container")
                     else:
@@ -222,7 +233,7 @@ def normalize_reveal_dom(soup, class_colors):
             else:
                 wrap_contents_in_div(soup, sec, "slide-text-container")
 
-def find_balanced_braces(text: str, start_idx: int) -> str:
+def find_balanced_braces(text: str, start_idx: int) -> str | None:
     """
     Finds a balanced substring starting with '{' and ending with '}'.
     Handles strings with escaped characters and nested braces.
@@ -230,23 +241,23 @@ def find_balanced_braces(text: str, start_idx: int) -> str:
     idx = text.find('{', start_idx)
     if idx == -1:
         return None
-    
+
     brace_count = 0
     in_string = False
     string_char = None
     escaped = False
-    
+
     for i in range(idx, len(text)):
         char = text[i]
-        
+
         if escaped:
             escaped = False
             continue
-            
+
         if char == '\\':
             escaped = True
             continue
-            
+
         if char in ('"', "'", "`"):
             if not in_string:
                 in_string = True
@@ -255,7 +266,7 @@ def find_balanced_braces(text: str, start_idx: int) -> str:
                 in_string = False
                 string_char = None
             continue
-            
+
         if not in_string:
             if char == '{':
                 brace_count += 1
@@ -263,21 +274,21 @@ def find_balanced_braces(text: str, start_idx: int) -> str:
                 brace_count -= 1
                 if brace_count == 0:
                     return text[idx:i+1]
-                    
+
     return None
 
-def parse_options_from_js(js_content: str) -> dict:
+def parse_options_from_js(js_content: str) -> dict[str, object]:
     """
     Parses options from a JS content string where window.webflow2revealOptions is defined.
     """
-    options = {}
+    options: dict[str, object] = {}
     pattern = re.compile(r'webflow2revealOptions\s*=\s*')
     for match in pattern.finditer(js_content):
         start_idx = match.end()
         obj_text = find_balanced_braces(js_content, start_idx)
         if not obj_text:
             continue
-            
+
         # Parse excludeSelectors
         exclude_selectors_match = re.search(r'excludeSelectors\s*:\s*(\[[^\]]*\]|"[^"\\]*(?:\\.[^"\\]*)*"|\'[^\'\\]*(?:\\.[^\'\\]*)*\')', obj_text)
         if exclude_selectors_match:
@@ -295,24 +306,26 @@ def parse_options_from_js(js_content: str) -> dict:
                 val_match = re.match(r'^["\'](.*)["\']$', val_str)
                 if val_match:
                     options['excludeSelectors'] = [val_match.group(1)]
-                    
+
         # Parse disableLayout
         disable_layout_match = re.search(r'disableLayout\s*:\s*(true|false)', obj_text, re.IGNORECASE)
         if disable_layout_match:
             options['disableLayout'] = disable_layout_match.group(1).lower() == 'true'
-            
+
     return options
 
-def extract_webflow2reveal_options(html_content: str, source_url: str = None) -> dict:
+def extract_webflow2reveal_options(
+    html_content: str, source_url: str | None = None
+) -> dict[str, object]:
     """
     Scans the HTML page for inline and linked config scripts and extracts options.
     """
-    options = {}
+    options: dict[str, object] = {}
     soup = BeautifulSoup(html_content, "html.parser")
-    
+
     inline_scripts = []
     external_script_urls = []
-    
+
     for script in soup.find_all("script"):
         src = script.get("src")
         if src:
@@ -328,12 +341,12 @@ def extract_webflow2reveal_options(html_content: str, source_url: str = None) ->
         else:
             if script.string:
                 inline_scripts.append(script.string)
-                
+
     for script_content in inline_scripts:
         opts = parse_options_from_js(script_content)
         if opts:
             options.update(opts)
-            
+
     for url in external_script_urls:
         try:
             print(f"Fetching config script: {url}")
@@ -344,13 +357,19 @@ def extract_webflow2reveal_options(html_content: str, source_url: str = None) ->
                     options.update(opts)
         except Exception as e:
             print(f"Warning: Could not fetch config script from {url}: {e}")
-            
+
     return options
 
-def convert(source: str, output: str = "index.html", serve: bool = False, port: int = 8000, exclude: str = None):
+def convert(
+    source: str,
+    output: str = "index.html",
+    serve: bool = False,
+    port: int = 8000,
+    exclude: str | None = None,
+) -> None:
     """
     Converts a Webflow page to a Reveal.js presentation.
-    
+
     Args:
         source: The URL (http/https) or local file path of the Webflow page.
         output: The output file path for the generated slide deck.
@@ -371,7 +390,7 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
         if not os.path.exists(source):
             print(f"Error: Local file {source} does not exist.", file=sys.stderr)
             sys.exit(1)
-        with open(source, "r", encoding="utf-8") as f:
+        with open(source, encoding="utf-8") as f:
             html_content = f.read()
 
     soup = BeautifulSoup(html_content, "html.parser")
@@ -385,10 +404,10 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
     all_excludes = []
     if exclude:
         all_excludes.extend([s.strip() for s in exclude.split(",") if s.strip()])
-    
+
     if page_options and 'excludeSelectors' in page_options:
         all_excludes.extend(page_options['excludeSelectors'])
-        
+
     # Remove excluded elements from the HTML soup
     if all_excludes:
         # Deduplicate
@@ -402,18 +421,18 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
                 print(f"Warning: Invalid selector for exclusion: {selector} ({e})", file=sys.stderr)
 
     class_colors = {}
-    
+
     # 1. Parse inline style tags
     for style_tag in soup.find_all("style"):
         if style_tag.string:
             class_colors.update(parse_css_background_colors(style_tag.string))
-            
+
     # 2. Parse external linked stylesheets
     for link_tag in soup.find_all("link", rel="stylesheet"):
         href = link_tag.get("href")
         if not href:
             continue
-        
+
         # Resolve stylesheet path
         if href.startswith("//"):
             css_url = "https:" + href
@@ -436,7 +455,7 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
             else:
                 if os.path.exists(css_url):
                     print(f"Reading stylesheet: {css_url}")
-                    with open(css_url, "r", encoding="utf-8") as f:
+                    with open(css_url, encoding="utf-8") as f:
                         class_colors.update(parse_css_background_colors(f.read()))
         except Exception as e:
             print(f"Warning: could not resolve stylesheet {css_url}: {e}")
@@ -444,7 +463,7 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
     # 3. Locate or wrap slide sections
     reveal_div = soup.select_one("div.reveal")
     slides_div = soup.select_one("div.reveal > div.slides")
-    
+
     if reveal_div and slides_div:
         print("Found existing Reveal.js scaffold (div.reveal > div.slides).")
         sections = slides_div.find_all("section", recursive=False)
@@ -453,19 +472,19 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
         # Find all loose sections
         all_sections = soup.find_all("section")
         sections = [sec for sec in all_sections if is_slide_section(sec)]
-        
+
         # Extract them from their original positions and prepare to wrap them
         for sec in sections:
             sec.extract()
-            
+
         # Create scaffold
         reveal_div = soup.new_tag("div", attrs={"class": "reveal"})
         slides_div = soup.new_tag("div", attrs={"class": "slides"})
         reveal_div.append(slides_div)
-        
+
         for sec in sections:
             slides_div.append(sec)
-            
+
         # Place the scaffold in the body
         if soup.body:
             soup.body.append(reveal_div)
@@ -499,7 +518,7 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
             bg_color = bg_color.strip().lower()
             if bg_color in ('transparent', '#0000', 'rgba(0,0,0,0)', 'rgba(0, 0, 0, 0)'):
                 bg_color = body_bg if body_bg else "#000000"
-        
+
         if bg_color:
             bg_color = bg_color.strip().lower()
             is_light = False
@@ -523,7 +542,6 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
                     pass
             elif bg_color.startswith("rgb"):
                 try:
-                    import re
                     parts = re.findall(r"\d+", bg_color)
                     if len(parts) >= 3:
                         r, g, b = int(parts[0]), int(parts[1]), int(parts[2])
@@ -534,7 +552,7 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
                     pass
             elif bg_color in ("white", "yellow", "cyan", "lime"):
                 is_light = True
-            
+
             if is_light:
                 add_class(sec, "slide-light-bg")
             else:
@@ -544,7 +562,7 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
     if not soup.head:
         head = soup.new_tag("head")
         soup.insert(0, head)
-    
+
     # Check if reveal.css is already loaded, otherwise append
     reveal_css_found = False
     for link in soup.find_all("link"):
@@ -734,12 +752,12 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
     # Injected scripts
     reveal_js = soup.new_tag("script", src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.js")
     reveal_init = soup.new_tag("script")
-    
+
     # Determine disableLayout value (defaulting to True if not specified or true, else respect page config)
     disable_layout_val = "true"
     if page_options and 'disableLayout' in page_options:
         disable_layout_val = "true" if page_options['disableLayout'] else "false"
-        
+
     reveal_init.string = f"""
     document.addEventListener("DOMContentLoaded", function() {{
       // Capture original body background styles before Reveal.js overrides them
@@ -788,7 +806,7 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
       }});
     }});
     """
-    
+
     if not soup.body:
         body = soup.new_tag("body")
         soup.append(body)
@@ -799,7 +817,7 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
     output_dir = os.path.dirname(os.path.abspath(output))
     if output_dir:
         os.makedirs(output_dir, exist_ok=True)
-        
+
     with open(output, "w", encoding="utf-8") as f:
         f.write(str(soup))
     print(f"Successfully converted and saved slide deck to: {output}")
@@ -809,15 +827,15 @@ def convert(source: str, output: str = "index.html", serve: bool = False, port: 
         print(f"Starting dev server in: {output_dir or '.'}")
         if output_dir:
             os.chdir(output_dir)
-            
+
         handler = http.server.SimpleHTTPRequestHandler
         socketserver.TCPServer.allow_reuse_address = True
-        
+
         with socketserver.TCPServer(("", port), handler) as httpd:
-            print(f"\n==========================================")
-            print(f"  Slide deck is running at:")
+            print("\n==========================================")
+            print("  Slide deck is running at:")
             print(f"  http://localhost:{port}/")
-            print(f"==========================================")
+            print("==========================================")
             print("Press Ctrl+C to stop the dev server.")
             try:
                 httpd.serve_forever()

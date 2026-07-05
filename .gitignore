@@ -235,3 +235,10 @@ lerna-debug.log*
 /js/dist/
 /js/node_modules/
 
+
+# OMC operational state
+.omc/
+
+# Vector store / local index artifacts
+ruvector.db
+*.ruvector.db

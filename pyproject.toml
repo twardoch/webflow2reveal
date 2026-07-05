@@ -20,8 +20,21 @@ dependencies = [
     "fire>=0.5.0",
 ]
 
+[project.urls]
+Homepage = "https://code.twardoch.com/webflow2reveal/"
+Repository = "https://github.com/twardoch/webflow2reveal"
+Issues = "https://github.com/twardoch/webflow2reveal/issues"
+
 [project.scripts]
 webflow2reveal = "webflow2reveal.__main__:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.6.0",
+    "mypy>=1.11.0",
+    "types-requests>=2.31.0",
+]
 
 [tool.hatch.version]
 source = "vcs"
@@ -37,3 +50,27 @@ packages = ["py/src/webflow2reveal"]
 
 [tool.hatch.build.hooks.vcs]
 version-file = "py/src/webflow2reveal/__version__.py"
+
+[tool.pytest.ini_options]
+testpaths = ["py/tests"]
+addopts = "-ra -q"
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+src = ["py/src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "W"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+files = ["py/src/webflow2reveal"]
+ignore_missing_imports = true
+warn_unused_ignores = true
+# BeautifulSoup types every multi-valued attribute (class, href, src) as a
+# str | AttributeValueList | None union. This DOM-munging code reads and writes
+# those attributes throughout, so we silence that stub friction while keeping
+# mypy's checks on names, signatures, and return types.
+disable_error_code = ["union-attr", "operator", "arg-type", "assignment", "type-var", "index", "attr-defined"]

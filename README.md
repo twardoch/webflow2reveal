@@ -103,6 +103,18 @@ The JS build emits CJS, ESM, and an IIFE global (`Webflow2Reveal`) via `tsup`.
 The Python package versions from git tags via `hatch-vcs`; a single tag releases
 both packages.
 
+## Development
+
+```bash
+uv sync --dev            # install the package with test/lint tooling
+uv run pytest py/tests   # run the test suite (offline; network is mocked)
+uv run ruff check py/src py/tests
+uv run mypy              # type-check the Python package
+```
+
+CI runs the same checks across Python 3.10–3.13 on every push and pull request;
+pushing a `v*` tag builds and publishes to PyPI.
+
 ## License
 
 MIT © Adam Twardoch.
